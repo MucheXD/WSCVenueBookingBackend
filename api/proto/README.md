@@ -1,0 +1,3 @@
+# Proto
+
+Protocol Buffer definitions.
