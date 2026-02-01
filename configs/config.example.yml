@@ -1,0 +1,26 @@
+# Example configuration file
+
+# Server configuration
+# server:
+#   host: "0.0.0.0"
+#   port: 8080
+#   mode: "development"  # development, production
+
+# Database configuration
+# database:
+#   host: "localhost"
+#   port: 5432
+#   user: "user"
+#   password: "password"
+#   database: "dbname"
+#   sslmode: "disable"
+
+# JWT configuration
+# jwt:
+#   secret: "your-secret-key"
+#   expiration: 3600  # seconds
+
+# Logging configuration
+# logging:
+#   level: "info"  # debug, info, warn, error
+#   format: "json"  # json, text
