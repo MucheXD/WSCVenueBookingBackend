@@ -1,84 +1,115 @@
+# golangci-lint 配置文件
+# golangci-lint configuration file
+
+# Linter 设置
 linters-settings:
+  # dupl: 检查重复代码
   dupl:
-    threshold: 100
+    threshold: 100  # 重复代码的阈值（token数量）
+
+  # funlen: 检查函数长度
   funlen:
-    lines: 100
-    statements: 50
+    lines: 100  # 函数最大行数
+    statements: 50  # 函数最大语句数
+
+  # goconst: 检查可以提取为常量的重复字符串
   goconst:
-    min-len: 2
-    min-occurrences: 2
+    min-len: 2  # 最小字符串长度
+    min-occurrences: 2  # 最小出现次数
+
+  # gocritic: 代码质量检查
   gocritic:
     enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
+      - diagnostic  # 诊断性检查
+      - experimental  # 实验性检查
+      - opinionated  # 主观性检查
+      - performance  # 性能检查
+      - style  # 代码风格检查
+
+  # gocyclo: 检查函数圈复杂度
   gocyclo:
-    min-complexity: 15
+    min-complexity: 15  # 最小复杂度阈值
+
+  # goimports: 检查import顺序和格式
   goimports:
-    local-prefixes: github.com/MucheXD/WSCVenueBookingBackend
+    local-prefixes: github.com/MucheXD/WSCVenueBookingBackend  # 本地包前缀
+
+  # golint: Go代码风格检查
   golint:
-    min-confidence: 0
+    min-confidence: 0  # 最小置信度
+
+  # gomnd: 检查魔法数字
   gomnd:
     settings:
       mnd:
         checks:
-          - argument
-          - case
-          - condition
-          - operation
-          - return
+          - argument  # 检查参数
+          - case  # 检查case语句
+          - condition  # 检查条件语句
+          - operation  # 检查操作
+          - return  # 检查返回值
+
+  # govet: Go官方代码检查工具
   govet:
-    check-shadowing: true
+    check-shadowing: true  # 检查变量遮蔽
+
+  # lll: 检查行长度
   lll:
-    line-length: 140
+    line-length: 140  # 最大行长度
+
+  # maligned: 检查结构体字段对齐
   maligned:
-    suggest-new: true
+    suggest-new: true  # 建议新的字段顺序
+
+  # misspell: 检查拼写错误
   misspell:
-    locale: US
+    locale: US  # 使用美式英语
 
+# Linter 列表
 linters:
-  disable-all: true
+  disable-all: true  # 禁用所有linter，然后只启用下面列出的
   enable:
-    - bodyclose
-    - dogsled
-    - dupl
-    - errcheck
-    - funlen
-    - gochecknoinits
-    - goconst
-    - gocritic
-    - gocyclo
-    - gofmt
-    - goimports
-    - gomnd
-    - goprintffuncname
-    - gosec
-    - gosimple
-    - govet
-    - ineffassign
-    - lll
-    - misspell
-    - nakedret
-    - staticcheck
-    - stylecheck
-    - typecheck
-    - unconvert
-    - unparam
-    - unused
-    - whitespace
+    - bodyclose  # 检查HTTP响应体是否正确关闭
+    - dogsled  # 检查空白标识符的过度使用
+    - dupl  # 检查重复代码
+    - errcheck  # 检查错误是否被处理
+    - funlen  # 检查函数长度
+    - gochecknoinits  # 检查init函数的使用
+    - goconst  # 检查可以提取为常量的字符串
+    - gocritic  # 提供多种代码质量检查
+    - gocyclo  # 检查圈复杂度
+    - gofmt  # 检查代码格式
+    - goimports  # 检查import语句
+    - gomnd  # 检查魔法数字
+    - goprintffuncname  # 检查printf类函数名
+    - gosec  # 安全检查
+    - gosimple  # 简化代码建议
+    - govet  # Go官方检查工具
+    - ineffassign  # 检查无效的赋值
+    - lll  # 检查行长度
+    - misspell  # 拼写检查
+    - nakedret  # 检查裸返回
+    - staticcheck  # 静态分析检查
+    - stylecheck  # 风格检查
+    - typecheck  # 类型检查
+    - unconvert  # 检查不必要的类型转换
+    - unparam  # 检查未使用的函数参数
+    - unused  # 检查未使用的代码
+    - whitespace  # 检查多余的空白
 
+# 问题过滤规则
 issues:
   exclude-rules:
+    # 测试文件排除某些检查
     - path: _test\.go
       linters:
-        - gomnd
-        - funlen
-        - goconst
+        - gomnd  # 测试中允许魔法数字
+        - funlen  # 测试函数可以较长
+        - goconst  # 测试中允许重复字符串
 
+# 运行配置
 run:
-  skip-dirs:
-    - bin
-    - vendor
-  timeout: 5m
+  skip-dirs:  # 跳过的目录
+    - bin  # 二进制文件目录
+    - vendor  # 依赖目录
+  timeout: 5m  # 超时时间

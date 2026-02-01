@@ -1,37 +1,11 @@
 #!/bin/bash
 
 # Setup development environment
+# 开发环境设置脚本
 
-set -e
-
-echo "Setting up development environment..."
-
-# Check if Go is installed
-if ! command -v go &> /dev/null; then
-    echo "Error: Go is not installed. Please install Go 1.21 or higher."
-    exit 1
-fi
-
-echo "Go version: $(go version)"
-
-# Initialize Go modules if needed
-if [ ! -f "go.mod" ]; then
-    echo "Initializing Go modules..."
-    go mod init github.com/MucheXD/WSCVenueBookingBackend
-fi
-
-# Download dependencies
-echo "Downloading dependencies..."
-go mod download
-
-# Install development tools
-echo "Installing development tools..."
-go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-
-echo "Development environment setup completed!"
-echo ""
-echo "Next steps:"
-echo "  1. Copy configs/config.example.yml to configs/config.yml and update it"
-echo "  2. Run 'make build' to build the project"
-echo "  3. Run 'make test' to run tests"
-echo "  4. Run 'make run' to start the application"
+# 用途说明：
+# - 检查 Go 是否已安装（要求 1.21 或更高版本）
+# - 初始化 Go 模块（如果需要）：go mod init
+# - 下载项目依赖：go mod download
+# - 安装开发工具：golangci-lint 等
+# - 配置本地开发环境

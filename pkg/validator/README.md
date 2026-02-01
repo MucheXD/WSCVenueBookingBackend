@@ -1,3 +1,0 @@
-# Validator
-
-Input validation utilities.

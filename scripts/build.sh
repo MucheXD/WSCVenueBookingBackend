@@ -1,25 +1,11 @@
 #!/bin/bash
 
 # Build script for the project
+# 项目构建脚本
 
-set -e
+# 用途说明：
+# - 创建 bin 目录用于存放编译后的二进制文件
+# - 编译 main 服务器：go build -o bin/main ./cmd/main
+# - 编译 worker 服务：go build -o bin/worker ./cmd/worker
+# - 编译 migrate 工具：go build -o bin/migrate ./cmd/migrate
 
-echo "Building WSCVenueBookingBackend..."
-
-# Create bin directory if it doesn't exist
-mkdir -p bin
-
-# Build API server
-echo "Building API server..."
-go build -o bin/api ./cmd/api
-
-# Build worker
-echo "Building worker..."
-go build -o bin/worker ./cmd/worker
-
-# Build migrate tool
-echo "Building migrate tool..."
-go build -o bin/migrate ./cmd/migrate
-
-echo "Build completed successfully!"
-echo "Binaries are available in ./bin/"

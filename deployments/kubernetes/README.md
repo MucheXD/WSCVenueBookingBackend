@@ -1,3 +1,0 @@
-# Kubernetes
-
-Kubernetes deployment manifests.

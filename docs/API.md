@@ -7,52 +7,34 @@
 ## Base URL
 
 ```
-http://localhost:8080/api/v1
+# API基础URL示例
+# Example: http://localhost:8080/api/v1
 ```
 
 ## Authentication
 
-大多数API端点需要JWT令牌认证。
-
-在请求头中包含：
 ```
-Authorization: Bearer <token>
+# 认证方式示例
+# 在请求头中包含认证信息
 ```
 
 ## Endpoints
 
-### Health Check
-
 ```
-GET /health
-```
-
-检查服务健康状态。
-
-**Response:**
-```json
-{
-  "status": "ok",
-  "timestamp": "2024-01-01T00:00:00Z"
-}
+# API端点将在此处定义
+# API endpoints will be defined here
 ```
 
 ## Error Responses
 
-所有错误响应遵循统一格式：
-
-```json
-{
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Error message",
-    "details": {}
-  }
-}
+```
+# 错误响应格式将在此处定义
+# Error response format will be defined here
 ```
 
 ## Rate Limiting
 
-API限流规则：
-- 未认证用户: 100 请求/小时
-- 已认证用户: 1000 请求/小时
+```
+# API限流规则将在此处定义
+# API rate limiting rules will be defined here
+```

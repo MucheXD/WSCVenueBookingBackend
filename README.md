@@ -7,7 +7,7 @@
 ```
 .
 ├── cmd/                    # 应用程序入口 / Application entry points
-│   ├── api/               # API服务器主程序 / Main API server application
+│   ├── main/              # 主服务器程序 / Main server application
 │   ├── worker/            # 后台工作进程 / Background worker application
 │   └── migrate/           # 数据库迁移工具 / Database migration tool
 │
@@ -21,14 +21,8 @@
 │   ├── service/          # 业务逻辑层 / Business logic layer
 │   └── utils/            # 内部工具函数 / Internal utility functions
 │
-├── pkg/                   # 可复用的公共代码 / Public reusable code
-│   ├── logger/           # 日志包 / Logging package
-│   ├── validator/        # 验证工具 / Validation utilities
-│   └── crypto/           # 加密工具 / Cryptography utilities
-│
 ├── api/                   # API定义 / API definitions
-│   ├── proto/            # Protocol Buffer定义 / Protocol Buffer definitions
-│   └── swagger/          # OpenAPI/Swagger文档 / OpenAPI/Swagger documentation
+│   └── proto/            # Protocol Buffer定义 / Protocol Buffer definitions
 │
 ├── configs/               # 配置文件 / Configuration files
 │   └── config.example.yml # 配置示例 / Configuration example
@@ -42,8 +36,7 @@
 │   └── e2e/              # 端到端测试 / End-to-end tests
 │
 ├── deployments/           # 部署配置 / Deployment configurations
-│   ├── docker/           # Docker配置 / Docker configurations
-│   └── kubernetes/       # Kubernetes清单 / Kubernetes manifests
+│   └── docker/           # Docker配置 / Docker configurations
 │
 ├── go.mod                 # Go模块定义 / Go module definition
 ├── Makefile              # Make构建脚本 / Make build script
@@ -55,6 +48,9 @@
 
 ### cmd/
 应用程序的入口点。每个子目录代表一个可执行程序。
+- **main/** - 主服务器应用程序
+- **worker/** - 后台工作进程
+- **migrate/** - 数据库迁移工具
 
 Application entry points. Each subdirectory represents an executable program.
 
@@ -63,15 +59,10 @@ Application entry points. Each subdirectory represents an executable program.
 
 Private application code. This code should not be imported by other projects.
 
-### pkg/
-可以被外部项目导入使用的公共库代码。
-
-Public library code that can be imported by external projects.
-
 ### api/
-API协议定义文件，如Protocol Buffers定义、OpenAPI规范等。
+API协议定义文件，如Protocol Buffers定义等。
 
-API protocol definition files, such as Protocol Buffers definitions, OpenAPI specifications, etc.
+API protocol definition files, such as Protocol Buffers definitions.
 
 ### configs/
 配置文件模板和示例。
@@ -89,49 +80,42 @@ Scripts for performing various build, install, analysis operations.
 Additional external test applications and test data.
 
 ### deployments/
-系统和容器编排部署配置和模板。
+容器部署配置和模板。
 
-System and container orchestration deployment configurations and templates.
+Container deployment configurations and templates.
 
 ## 开发指南 / Development Guide
 
+### 环境要求 / Prerequisites
+- Go 1.21+
+- Make (可选 / optional)
+- Docker (可选 / optional)
+
 ### 构建项目 / Build Project
-```bash
-make build
-```
+参考 Makefile 中的构建命令注释。
+
+Refer to build command comments in Makefile.
 
 ### 运行应用 / Run Application
-```bash
-make run
-```
+参考 Makefile 中的运行命令注释。
+
+Refer to run command comments in Makefile.
 
 ### 运行测试 / Run Tests
-```bash
-make test
-```
+参考 Makefile 中的测试命令注释。
+
+Refer to test command comments in Makefile.
 
 ### 代码检查 / Lint Code
-```bash
-make lint
-```
+参考 Makefile 和 .golangci.yml 中的配置说明。
 
-### 清理构建产物 / Clean Build Artifacts
-```bash
-make clean
-```
+Refer to configuration notes in Makefile and .golangci.yml.
 
 ## 技术栈 / Tech Stack
 
 - **语言 / Language**: Go 1.21+
 - **数据库 / Database**: PostgreSQL (推荐 / recommended)
 - **容器化 / Containerization**: Docker
-- **编排 / Orchestration**: Kubernetes (可选 / optional)
-
-## 贡献指南 / Contributing
-
-欢迎贡献！请先阅读 [CONTRIBUTING.md](./docs/CONTRIBUTING.md) 了解详细信息。
-
-Contributions are welcome! Please read [CONTRIBUTING.md](./docs/CONTRIBUTING.md) for details.
 
 ## 许可证 / License
 
