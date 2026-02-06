@@ -24,7 +24,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		tokenString := parts[1]
 		tokenData, err := utils.GetTokenData(tokenString)
 		if err != nil {
-			apiException.AbortWithException(c, apiException.AuthInvalid)
+			apiException.AbortWithException(c, apiException.AuthInvalid, err)
 			return
 		}
 		c.Set("user_id", tokenData.UserID)

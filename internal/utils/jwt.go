@@ -33,7 +33,7 @@ func GenerateToken(tokenData TokenData) (string, error) {
 	return tokenStr, nil
 }
 
-func GetTokenPayload(tokenStr string) (TokenData, error) {
+func GetTokenData(tokenStr string) (TokenData, error) {
 	var claims tokenClaims
 	token, err := jwt.ParseWithClaims(tokenStr, &claims, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

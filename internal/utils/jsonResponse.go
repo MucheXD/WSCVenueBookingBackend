@@ -1,19 +1,29 @@
 package utils
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
 
-func JsonResponse(c *gin.Context, code int, msg string, data interface{}) {
-	c.JSON(200, gin.H{
-		"code": code,
-		"msg":  msg,
-		"data": data,
+	"github.com/gin-gonic/gin"
+)
+
+type Response struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+	Data any    `json:"data"`
+}
+
+func SetJsonResponse(c *gin.Context, httpStatus int, code int, msg string, data any) {
+	c.JSON(httpStatus, Response{
+		Code: code,
+		Msg:  msg,
+		Data: data,
 	})
 }
 
-func JsonSuccessResponse(c *gin.Context, data interface{}) {
-	JsonResponse(c, 200, "success", data)
+func SetSuccessJsonResponse(c *gin.Context, data any) {
+	SetJsonResponse(c, http.StatusOK, http.StatusOK, "success", data)
 }
 
-func JsonErrorResponse(c *gin.Context, code int, msg string) {
-	JsonResponse(c, code, msg, nil)
+func SetErrorJsonResponse(c *gin.Context, httpStatus int, code int, msg string) {
+	SetJsonResponse(c, httpStatus, code, msg, nil)
 }
