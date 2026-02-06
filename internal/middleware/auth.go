@@ -3,6 +3,7 @@ package middlewares
 import (
 	"strings"
 
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/apiException"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils"
 	"github.com/gin-gonic/gin"
 )
@@ -12,46 +13,21 @@ func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(401, gin.H{
-				"code": 401,
-				"msg":  "请先登录",
-				"data": nil,
-			})
-			c.Abort()
+			apiException.AbortWithException(c, apiException.Unauthorized)
 			return
 		}
-		parts:= strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || parts[0]!="Bearer" {
-			c.JSON(401, gin.H{
-				"code": 401,
-				"msg":  "登录异常，请重新登录",
-				"data": nil,
-			})
-			c.Abort()
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			apiException.AbortWithException(c, apiException.AuthInvalid)
 			return
 		}
 		tokenString := parts[1]
-		token, err := utils.ParseToken(tokenString)
+		tokenData, err := utils.GetTokenData(tokenString)
 		if err != nil {
-			c.JSON(401, gin.H{
-				"code": 401,
-				"msg":  "登录异常，请重新登录",
-				"data": nil,
-			})
-			c.Abort()
+			apiException.AbortWithException(c, apiException.AuthInvalid)
 			return
 		}
-		claims, err := utils.ExtractClaims(token)
-		if err != nil {
-			c.JSON(401, gin.H{
-				"code": 401,
-				"msg":  "登录异常，请重新登录",
-				"data": nil,
-			})
-			c.Abort()
-			return
-		}
-		c.Set("user_id", claims["user_id"])
+		c.Set("user_id", tokenData.UserID)
 		c.Next()
 	}
 }
