@@ -3,8 +3,8 @@ package middlewares
 import (
 	"errors"
 
-	"github.com/MucheXD/WSCVenueBookingBackend/internal/apiException"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/apiException"
 	"github.com/gin-gonic/gin"
 )
 

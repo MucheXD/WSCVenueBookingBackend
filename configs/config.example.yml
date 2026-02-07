@@ -16,9 +16,9 @@
 #   sslmode: "disable"
 
 # JWT configuration
-# jwt:
-#   secret: "your-secret-key"
-#   expiration: 3600  # seconds
+jwt:
+    secret: "your-secret-key"
+    expiration: 3600  # seconds
 
 # Logging configuration
 # logging:

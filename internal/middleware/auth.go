@@ -3,8 +3,8 @@ package middlewares
 import (
 	"strings"
 
-	"github.com/MucheXD/WSCVenueBookingBackend/internal/apiException"
-	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/apiException"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/webtoken"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,7 +22,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 		tokenString := parts[1]
-		tokenData, err := utils.GetTokenData(tokenString)
+		tokenData, err := webtoken.GetTokenData(tokenString)
 		if err != nil {
 			apiException.AbortWithException(c, apiException.AuthInvalid, err)
 			return
