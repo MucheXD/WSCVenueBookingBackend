@@ -11,7 +11,6 @@ import (
 )
 
 type VenueTimeslotEntity struct {
-	ID        int        `gorm:"column:id;primaryKey"`
 	VenueID   int        `gorm:"column:venue_id"`
 	StartTime time.Time  `gorm:"column:start_time"`
 	EndTime   *time.Time `gorm:"column:end_time"`
@@ -23,7 +22,7 @@ func (VenueTimeslotEntity) TableName() string {
 }
 
 func CreateNewVenueTimetable(modelT *models.VenueTimetable) error {
-	entities := fromTimetableDomain(modelT)
+	entities := timetableToTimeslotEntities(modelT)
 	if len(entities) == 0 {
 		return nil
 	}
@@ -45,7 +44,7 @@ func GetVenueTimetableByVenueID(venueID int) (*models.VenueTimetable, error) {
 	if len(entities) == 0 {
 		return nil, gorm.ErrRecordNotFound
 	}
-	return toTimetableDomain(venueID, entities), nil
+	return timeslotEntitiesToTimetable(venueID, entities), nil
 }
 
 func DeleteVenueTimetableByVenueID(venueID int) error {
@@ -58,45 +57,58 @@ func DeleteVenueTimetableByVenueID(venueID int) error {
 	return nil
 }
 
-// --- Entity-Domain Conversion ---
+// Entity-Domain Conversion
 
-func fromTimetableDomain(modelT *models.VenueTimetable) []VenueTimeslotEntity {
-	if modelT == nil || len(modelT.TimeSlots) == 0 {
+// Relation between timetable and timeslot / model and entity:
+// model-timetable = venueID + []timeslot
+// entity = venueID + timeslot
+// model-timetable = entity*N
+
+func timetableToTimeslotEntities(modelT *models.VenueTimetable) []VenueTimeslotEntity {
+	if modelT == nil || len(modelT.Timeslots) == 0 {
 		return nil
 	}
-	entities := make([]VenueTimeslotEntity, 0, len(modelT.TimeSlots))
-	for _, slot := range modelT.TimeSlots {
-		entity := VenueTimeslotEntity{
-			VenueID:   modelT.VenueID,
-			StartTime: time.Unix(slot.StartTime, 0),
-			Status:    slot.Status,
-		}
-		if slot.EndTime > 0 {
-			endTime := time.Unix(slot.EndTime, 0)
-			entity.EndTime = &endTime
-		}
+	entities := make([]VenueTimeslotEntity, 0, len(modelT.Timeslots))
+	for _, slot := range modelT.Timeslots {
+		var entity VenueTimeslotEntity
+		entity.fromDomain(modelT.VenueID, slot)
 		entities = append(entities, entity)
 	}
 	return entities
 }
 
-func toTimetableDomain(venueID int, entities []VenueTimeslotEntity) *models.VenueTimetable {
+func timeslotEntitiesToTimetable(venueID int, entities []VenueTimeslotEntity) *models.VenueTimetable {
 	if len(entities) == 0 {
 		return nil
 	}
 	modelT := &models.VenueTimetable{
 		VenueID:   venueID,
-		TimeSlots: make([]models.VenueTimeslot, 0, len(entities)),
+		Timeslots: make([]models.VenueTimeslot, 0, len(entities)),
 	}
 	for _, entity := range entities {
-		slot := models.VenueTimeslot{
-			StartTime: entity.StartTime.Unix(),
-			Status:    entity.Status,
-		}
-		if entity.EndTime != nil {
-			slot.EndTime = entity.EndTime.Unix()
-		}
-		modelT.TimeSlots = append(modelT.TimeSlots, slot)
+		slot := entity.toDomain()
+		modelT.Timeslots = append(modelT.Timeslots, *slot)
+	}
+	return modelT
+}
+
+func (v *VenueTimeslotEntity) fromDomain(venueID int, timeslot models.VenueTimeslot) {
+	v.VenueID = venueID
+	v.StartTime = timeslot.StartTime
+	v.Status = timeslot.Status
+	if !timeslot.EndTime.IsZero() {
+		v.EndTime = &timeslot.EndTime
+	}
+}
+
+func (v *VenueTimeslotEntity) toDomain() *models.VenueTimeslot {
+	modelT := &models.VenueTimeslot{
+		StartTime: v.StartTime,
+		EndTime:   time.Time{},
+		Status:    v.Status,
+	}
+	if v.EndTime != nil {
+		modelT.EndTime = *v.EndTime
 	}
 	return modelT
 }

@@ -7,7 +7,6 @@ import (
 )
 
 type VenueAccessEntity struct {
-	ID               int  `gorm:"column:id;primaryKey"`
 	VAGID            int  `gorm:"column:vagid"`
 	VenueID          int  `gorm:"column:venue_id"`
 	AllowReservation bool `gorm:"column:allow_reservation"`
@@ -21,7 +20,7 @@ func (VenueAccessEntity) TableName() string {
 }
 
 func CreateNewVenueAccessGroup(modelA *models.VenueAccess) error {
-	entities := fromDomain(modelA)
+	entities := convVenueAccessToEntity(modelA)
 	if len(entities) == 0 {
 		return nil
 	}
@@ -42,7 +41,7 @@ func GetVenueAccessGroupByID(vagID int) (*models.VenueAccess, error) {
 	if len(entities) == 0 {
 		return nil, gorm.ErrRecordNotFound
 	}
-	return toDomain(entities), nil
+	return convVenueAccessFromEntity(entities), nil
 }
 
 func DeleteVenueAccessGroupByID(vagID int) error {
@@ -55,30 +54,43 @@ func DeleteVenueAccessGroupByID(vagID int) error {
 	return nil
 }
 
-// --- Entity-Domain Conversion ---
+// Entity-Domain Conversion
 
-// 批量 domain -> entities
-func fromDomain(modelA *models.VenueAccess) []VenueAccessEntity {
+// model-VenueAccess = vagID + [venueID]*N*permissions
+// entity-VenueAccessEntity = vagID + venueID + permissions
+// model-VenueAccess = entity*N
+
+func convVenueAccessToEntity(modelA *models.VenueAccess) []VenueAccessEntity {
+	if modelA == nil {
+		return nil
+	}
 	entities := make([]VenueAccessEntity, 0)
+	// 定义内部函数以减少重复代码，setFunc 为设置权限字段的函数
 	appendEntities := func(venues map[int]struct{}, setFunc func(*VenueAccessEntity)) {
-		for venueID := range venues {
+		if len(venues) == 0 {
+			return
+		}
+		for venueID := range venues { // 将具有该权限的 venueID 分离出来作为一条记录
 			entity := VenueAccessEntity{
 				VAGID:   modelA.VAGID,
 				VenueID: venueID,
 			}
-			setFunc(&entity)
+			setFunc(&entity) // 设置对应的权限字段，由传入的函数完成
 			entities = append(entities, entity)
 		}
 	}
+	// 下述步骤分离每种权限的每个目标场地作为独立的一条实体记录
+	// 结果条目数为各权限对应的目标场地数之和，每个实体只有一个 true 权限字段
 	appendEntities(modelA.AllowReservation, func(e *VenueAccessEntity) { e.AllowReservation = true })
 	appendEntities(modelA.AllowApproval, func(e *VenueAccessEntity) { e.AllowApproval = true })
 	appendEntities(modelA.AllowEdit, func(e *VenueAccessEntity) { e.AllowEdit = true })
 	appendEntities(modelA.AllowManage, func(e *VenueAccessEntity) { e.AllowManage = true })
+	// 由于数据表设计为窄表，故需合并同属一个目标场地的多个权限的记录
+	// 结果条目数为不同的目标场地数
 	return mergeVenueAccessEntities(entities)
 }
 
-// 批量 entities -> domain
-func toDomain(entities []VenueAccessEntity) *models.VenueAccess {
+func convVenueAccessFromEntity(entities []VenueAccessEntity) *models.VenueAccess {
 	if len(entities) == 0 {
 		return nil
 	}

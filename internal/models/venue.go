@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type Venue struct {
 	ID             int
 	Name           string
@@ -29,8 +31,7 @@ type VenueCampus struct {
 }
 
 type VenueAccess struct {
-	VAGID         int
-	TargetVenueID int
+	VAGID int
 	// Note: Using map[int]struct{} to represent sets of Venues for each permission type
 	// 注意：出于索引效率使用 map[int]struct{} 请按 Array 理解
 	AllowReservation map[int]struct{}
@@ -40,12 +41,12 @@ type VenueAccess struct {
 }
 
 type VenueTimeslot struct {
-	StartTime int64
-	EndTime   int64
+	StartTime time.Time
+	EndTime   time.Time
 	Status    string
 }
 
 type VenueTimetable struct {
 	VenueID   int
-	TimeSlots []VenueTimeslot
+	Timeslots []VenueTimeslot
 }
