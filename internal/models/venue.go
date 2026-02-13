@@ -38,3 +38,14 @@ type VenueAccess struct {
 	AllowEdit        map[int]struct{}
 	AllowManage      map[int]struct{}
 }
+
+type VenueTimeslot struct {
+	StartTime int64
+	EndTime   int64
+	Status    string
+}
+
+type VenueTimetable struct {
+	VenueID   int
+	TimeSlots []VenueTimeslot
+}
