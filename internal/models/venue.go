@@ -41,9 +41,10 @@ type VenueAccess struct {
 }
 
 type VenueTimeslot struct {
-	StartTime time.Time
-	EndTime   time.Time
-	Status    string
+	StartTime     time.Time
+	EndTime       time.Time
+	ApplicationID int
+	Status        string
 }
 
 type VenueTimetable struct {

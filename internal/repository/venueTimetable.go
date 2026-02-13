@@ -11,10 +11,11 @@ import (
 )
 
 type VenueTimeslotEntity struct {
-	VenueID   int        `gorm:"column:venue_id"`
-	StartTime time.Time  `gorm:"column:start_time"`
-	EndTime   *time.Time `gorm:"column:end_time"`
-	Status    string     `gorm:"column:status"`
+	VenueID       int        `gorm:"column:venue_id"`
+	StartTime     time.Time  `gorm:"column:start_time"`
+	EndTime       *time.Time `gorm:"column:end_time"`
+	ApplicationID *int       `gorm:"column:application_id"`
+	Status        string     `gorm:"column:status"`
 }
 
 func (VenueTimeslotEntity) TableName() string {
@@ -96,6 +97,10 @@ func (v *VenueTimeslotEntity) fromDomain(venueID int, timeslot models.VenueTimes
 	v.VenueID = venueID
 	v.StartTime = timeslot.StartTime
 	v.Status = timeslot.Status
+	if timeslot.ApplicationID != 0 {
+		associatedApplicationID := timeslot.ApplicationID
+		v.ApplicationID = &associatedApplicationID
+	}
 	if !timeslot.EndTime.IsZero() {
 		v.EndTime = &timeslot.EndTime
 	}
@@ -103,9 +108,13 @@ func (v *VenueTimeslotEntity) fromDomain(venueID int, timeslot models.VenueTimes
 
 func (v *VenueTimeslotEntity) toDomain() *models.VenueTimeslot {
 	modelT := &models.VenueTimeslot{
-		StartTime: v.StartTime,
-		EndTime:   time.Time{},
-		Status:    v.Status,
+		StartTime:     v.StartTime,
+		EndTime:       time.Time{},
+		ApplicationID: 0,
+		Status:        v.Status,
+	}
+	if v.ApplicationID != nil {
+		modelT.ApplicationID = *v.ApplicationID
 	}
 	if v.EndTime != nil {
 		modelT.EndTime = *v.EndTime
