@@ -8,5 +8,6 @@ CREATE TABLE venue_accesses (
     allow_approval tinyint(1) not null COMMENT 'Whether this access group allows approval',
     allow_edit tinyint(1) not null COMMENT 'Whether this access group allows edit',
     allow_manage tinyint(1) not null COMMENT 'Whether this access group allows manage',
-    Foreign Key (venue_id) REFERENCES venues (venue_id)
+    Foreign Key (venue_id) REFERENCES venues (venue_id),
+    CONSTRAINT uq_vagid_venue_id UNIQUE (vagid, venue_id)
 ) COMMENT 'Venue Accesses Table';

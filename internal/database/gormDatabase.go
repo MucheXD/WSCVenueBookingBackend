@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"log"
+	"log/slog"
 
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/config"
 	"gorm.io/driver/mysql"
@@ -21,22 +22,13 @@ func Init() {
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		user, pass, host, port, DBname)
-	fmt.Println(dsn)
+	slog.Debug("Connecting to database (gorm/mysql)", "dsn", dsn)
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
 	if err != nil {
-		log.Fatal("Database connect failed:", err)
+		log.Fatal("Database connection failed")
 	}
 
-	err = autoMigrate(db)
-	if err != nil {
-		log.Fatal("Database migrate failed:", err)
-
-	}
 	DB = db
-}
-
-func autoMigrate(db *gorm.DB) error {
-	panic("unimplemented")
 }
