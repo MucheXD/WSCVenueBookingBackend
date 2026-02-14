@@ -12,7 +12,7 @@ type VenueEntity struct {
 	TypeID         int    `gorm:"column:type_id"`
 	Capacity       int    `gorm:"column:capacity"`
 	Description    string `gorm:"column:description_text"`
-	CoverImageFile string `gorm:"column:cover_image_file"`
+	CoverImageToken string `gorm:"column:cover_image_token"`
 	IsActive       bool   `gorm:"column:is_active"`
 }
 
@@ -59,7 +59,7 @@ func (v *VenueEntity) fromDomain(modelV *models.Venue) {
 	v.TypeID = modelV.TypeID
 	v.Capacity = modelV.Capacity
 	v.Description = modelV.Description
-	v.CoverImageFile = modelV.CoverImageFile
+	v.CoverImageToken = modelV.CoverImageToken
 	v.IsActive = modelV.IsActive
 }
 
@@ -71,7 +71,7 @@ func (v *VenueEntity) toDomain() *models.Venue {
 		TypeID:         v.TypeID,
 		Capacity:       v.Capacity,
 		Description:    v.Description,
-		CoverImageFile: v.CoverImageFile,
+		CoverImageToken: v.CoverImageToken,
 		IsActive:       v.IsActive,
 	}
 }

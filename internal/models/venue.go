@@ -9,7 +9,7 @@ type Venue struct {
 	TypeID         int
 	Capacity       int
 	Description    string
-	CoverImageFile string
+	CoverImageToken string
 	IsActive       bool
 }
 

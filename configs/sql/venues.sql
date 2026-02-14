@@ -8,9 +8,9 @@ CREATE TABLE venues (
     type_id INTEGER COMMENT 'Venue Type ID',
     capacity INTEGER COMMENT 'Venue Capacity',
     description_text TEXT COMMENT 'Venue Description',
-    cover_image_fid int COMMENT 'Cover Image File ID',
+    cover_image_token char(64) COMMENT 'Cover Image File Token',
     is_active BOOLEAN COMMENT 'Is Active Flag',
     FOREIGN KEY (location_building_id) REFERENCES venue_buildings (building_id),
-    FOREIGN KEY (cover_image_fid) REFERENCES file_objects (fid),
+    FOREIGN KEY (cover_image_token) REFERENCES file_objects (file_token),
     Foreign Key (type_id) REFERENCES venue_types (venue_type_id)
 ) COMMENT 'Venue List Table';

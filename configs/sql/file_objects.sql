@@ -1,10 +1,10 @@
 DROP TABLE IF EXISTS file_objects;
 
 CREATE TABLE file_objects (
-    fid int NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT 'Primary Key, unique file identifier',
+    fid int NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT '(DBOnly) Primary Key, unique file identifier',
+    file_token char(64) NOT NULL UNIQUE COMMENT 'Unique token for file access, calculated from hash and salt',
     file_hash char(64) NOT NULL UNIQUE COMMENT 'Hash of the file',
     file_name varchar(255) NOT NULL COMMENT 'File name in the storage',
-    file_title varchar(255) COMMENT 'Name of the file (Optional)',
-    file_type varchar(16) COMMENT 'Type of the file (e.g., media, document, etc.)',
-    file_size bigint COMMENT 'Size of the file in bytes'
+    file_size bigint COMMENT 'Size of the file in bytes',
+    link_count int DEFAULT 0 COMMENT '(RepoLayerOnly) Number of references to this file, used for garbage collection'
 ) COMMENT 'File Objects Table';
