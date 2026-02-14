@@ -27,7 +27,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			apiException.AbortWithException(c, apiException.AuthInvalid, err)
 			return
 		}
-		c.Set("user_id", tokenData.UserID)
+		c.Set("UserID", tokenData.UserID)
 		c.Next()
 	}
 }
