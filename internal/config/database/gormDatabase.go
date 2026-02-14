@@ -12,7 +12,7 @@ import (
 
 var DB *gorm.DB
 
-func Init() {
+func InitDatabase() {
 
 	user := config.Config.GetString("database.user")
 	pass := config.Config.GetString("database.password")

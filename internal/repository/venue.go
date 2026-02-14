@@ -1,19 +1,19 @@
 package repository
 
 import (
-	"github.com/MucheXD/WSCVenueBookingBackend/internal/database"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/config/database"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
 )
 
 type VenueEntity struct {
-	VenueID        int    `gorm:"column:venue_id;primaryKey"`
-	Name           string `gorm:"column:name_text"`
-	BuildingID     int    `gorm:"column:location_building_id"`
-	TypeID         int    `gorm:"column:type_id"`
-	Capacity       int    `gorm:"column:capacity"`
-	Description    string `gorm:"column:description_text"`
+	VenueID         int    `gorm:"column:venue_id;primaryKey"`
+	Name            string `gorm:"column:name_text"`
+	BuildingID      int    `gorm:"column:location_building_id"`
+	TypeID          int    `gorm:"column:type_id"`
+	Capacity        int    `gorm:"column:capacity"`
+	Description     string `gorm:"column:description_text"`
 	CoverImageToken string `gorm:"column:cover_image_token"`
-	IsActive       bool   `gorm:"column:is_active"`
+	IsActive        bool   `gorm:"column:is_active"`
 }
 
 func (VenueEntity) TableName() string {
@@ -65,13 +65,13 @@ func (v *VenueEntity) fromDomain(modelV *models.Venue) {
 
 func (v *VenueEntity) toDomain() *models.Venue {
 	return &models.Venue{
-		ID:             v.VenueID,
-		Name:           v.Name,
-		BuildingID:     v.BuildingID,
-		TypeID:         v.TypeID,
-		Capacity:       v.Capacity,
-		Description:    v.Description,
+		ID:              v.VenueID,
+		Name:            v.Name,
+		BuildingID:      v.BuildingID,
+		TypeID:          v.TypeID,
+		Capacity:        v.Capacity,
+		Description:     v.Description,
 		CoverImageToken: v.CoverImageToken,
-		IsActive:       v.IsActive,
+		IsActive:        v.IsActive,
 	}
 }

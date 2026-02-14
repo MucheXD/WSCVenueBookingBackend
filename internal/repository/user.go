@@ -3,7 +3,7 @@ package repository
 import (
 	"time"
 
-	"github.com/MucheXD/WSCVenueBookingBackend/internal/database"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/config/database"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
 )
 

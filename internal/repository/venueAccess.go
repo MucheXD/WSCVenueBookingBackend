@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/MucheXD/WSCVenueBookingBackend/internal/database"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/config/database"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
 	"gorm.io/gorm"
 )
