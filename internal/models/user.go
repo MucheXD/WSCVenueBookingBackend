@@ -3,7 +3,7 @@ package models
 import "time"
 
 type User struct {
-	ID           int
+	UID          int
 	PasswordHash string
 	CreateTime   time.Time
 	Username     string

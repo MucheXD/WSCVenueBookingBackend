@@ -8,7 +8,7 @@ import (
 )
 
 type UserEntity struct {
-	UUID         int       `gorm:"column:uuid;primaryKey"`
+	UID          int       `gorm:"column:uid;primaryKey"`
 	PasswordHash string    `gorm:"column:password_hash"`
 	RegisteredAt time.Time `gorm:"column:registered_at"`
 	Username     string    `gorm:"column:username"`
@@ -34,7 +34,7 @@ func CreateNewUser(modelU *models.User) error {
 func GetUserByID(userID int) (*models.User, error) {
 	var userEntity UserEntity
 	txDB := database.DB.
-		Where(&UserEntity{UUID: userID}).
+		Where(&UserEntity{UID: userID}).
 		Take(&userEntity)
 	if txDB.Error != nil {
 		return nil, txDB.Error
@@ -44,7 +44,7 @@ func GetUserByID(userID int) (*models.User, error) {
 
 func DeleteUserByID(userID int) error {
 	txDB := database.DB.
-		Where(&UserEntity{UUID: userID}).
+		Where(&UserEntity{UID: userID}).
 		Delete(&UserEntity{})
 	if txDB.Error != nil {
 		return txDB.Error
@@ -55,7 +55,7 @@ func DeleteUserByID(userID int) error {
 // Entity-Domain Conversion (Private Methods)
 
 func (u *UserEntity) fromDomain(modelU *models.User) {
-	u.UUID = modelU.ID
+	u.UID = modelU.UID
 	u.PasswordHash = modelU.PasswordHash
 	u.RegisteredAt = modelU.CreateTime
 	u.Username = modelU.Username
@@ -67,7 +67,7 @@ func (u *UserEntity) fromDomain(modelU *models.User) {
 
 func (u *UserEntity) toDomain() *models.User {
 	return &models.User{
-		ID:           u.UUID,
+		UID:          u.UID,
 		PasswordHash: u.PasswordHash,
 		CreateTime:   u.RegisteredAt,
 		Username:     u.Username,
