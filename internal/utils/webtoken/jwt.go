@@ -8,8 +8,9 @@ import (
 )
 
 type TokenData struct {
-	UserID             uint `json:"uid"`
-	VenueAccessGroupID uint `json:"vag,omitempty"`
+	UserID             int    `json:"uid"`
+	SysPermissionMap   uint64 `json:"spm,omitempty"`
+	VenueAccessGroupID int    `json:"vag,omitempty"`
 }
 type tokenClaims struct {
 	TokenData
