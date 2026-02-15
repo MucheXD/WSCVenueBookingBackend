@@ -28,6 +28,8 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 		c.Set("UserID", tokenData.UserID)
+		c.Set("SysPermissionMap", tokenData.SysPermissionMap)
+		c.Set("VenueAccessGroupID", tokenData.VenueAccessGroupID)
 		c.Next()
 	}
 }

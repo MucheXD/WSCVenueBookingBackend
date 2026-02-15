@@ -5,10 +5,11 @@ import "time"
 type User struct {
 	UID          int
 	PasswordHash string
+	PasswordSalt string
 	CreateTime   time.Time
 	Username     string
 	SchoolID     string
 	RealName     string
-	PermType     string
+	PermMap      uint64
 	PermVAGID    int
 }

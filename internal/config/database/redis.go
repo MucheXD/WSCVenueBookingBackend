@@ -21,3 +21,7 @@ func InitRedis() {
 	}
 	RDB = rdb
 }
+
+var (
+	KeyLoginSessionID = "login:sid"
+)
