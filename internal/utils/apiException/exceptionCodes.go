@@ -9,6 +9,7 @@ var (
 	NotFound     = NewException(http.StatusNotFound, 200404, http.StatusText(http.StatusNotFound))
 	Unauthorized = NewException(http.StatusUnauthorized, 200401, "请先登录")
 	AuthInvalid  = NewException(http.StatusUnauthorized, 200402, "登录异常，请重新登录")
-
-	LoginFailed = NewException(http.StatusUnauthorized, 201001, "登录失败，用户名或密码错误")
+	LoginTimeout = NewException(http.StatusUnauthorized, 200403, "登录过程超时，请重试")
+	LoginInvalid = NewException(http.StatusUnauthorized, 200404, "登录信息无效，请重新登录")
+	LoginFailed  = NewException(http.StatusUnauthorized, 201001, "登录失败，用户名或密码错误")
 )

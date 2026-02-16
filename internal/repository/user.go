@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/config/database"
@@ -41,6 +43,21 @@ func GetUserByID(userID int) (*models.User, error) {
 		return nil, txDB.Error
 	}
 	return userEntity.toDomain(), nil
+}
+
+func GetUniqueUserByUsername(username string) (*models.User, error) {
+	retUsr, err := FoundUserByUsername(username)
+	if err != nil {
+		return nil, err
+	}
+	if len(retUsr) <= 0 {
+		return nil, nil
+	}
+	if len(retUsr) > 1 {
+		slog.Warn("Multiple users found with the same username", "username", username)
+		return nil, fmt.Errorf("Multiple user found by GetUniqueUserByUsername method, username: %s", username)
+	}
+	return retUsr[0], nil
 }
 
 func FoundUserByUsername(username string) ([]*models.User, error) {

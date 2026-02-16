@@ -23,5 +23,7 @@ func InitRedis() {
 }
 
 var (
-	KeyLoginSessionID = "login:sid"
+	KeyLoginSessionID = func(sessionID string) string {
+		return "login:sid:{" + sessionID + "}"
+	}
 )
