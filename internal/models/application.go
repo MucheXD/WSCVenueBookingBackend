@@ -2,7 +2,7 @@ package models
 
 type Application struct {
 	VenueID             int
-	ApplicantUID        int
+	ApplicantUID        string
 	ApplicationStatus   string
 	DescriptionText     string
 	ActivityName        string
@@ -13,14 +13,14 @@ type Application struct {
 }
 
 type ApplicationCoordinator struct {
-	UID          int
+	UID          string
 	Name         string
 	ContactEmail string
 	ContactPhone string
 }
 
 type ApplicationComment struct {
-	CommenterUID int
+	CommenterUID string
 	CommentText  string
 	CommentTime  string
 	Attachments  []Attachment

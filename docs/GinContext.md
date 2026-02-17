@@ -4,6 +4,6 @@
 
 keyname - type - usage
 
-UserID int 发起请求的用户UID
+UserID string 发起请求的用户UID
 SysPermissionMap uint64 发起请求的用户系统权限表
 VenueAccessGroupID int 发起请求的用户场地权限组编号

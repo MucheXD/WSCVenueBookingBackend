@@ -10,7 +10,7 @@ import (
 )
 
 type UserEntity struct {
-	UID          int       `gorm:"column:uid;primaryKey"`
+	UID          string    `gorm:"column:uid;primaryKey"`
 	PasswordHash string    `gorm:"column:password_hash"`
 	PasswordSalt string    `gorm:"column:password_salt"`
 	RegisteredAt time.Time `gorm:"column:registered_at"`
@@ -34,7 +34,7 @@ func CreateNewUser(modelU *models.User) error {
 	return nil
 }
 
-func GetUserByID(userID int) (*models.User, error) {
+func GetUserByID(userID string) (*models.User, error) {
 	var userEntity UserEntity
 	txDB := database.DB.
 		Where(&UserEntity{UID: userID}).
@@ -75,7 +75,18 @@ func FoundUserByUsername(username string) ([]*models.User, error) {
 	return users, nil
 }
 
-func DeleteUserByID(userID int) error {
+func IsUsernameExists(username string) (bool, error) {
+	var count int64
+	txDB := database.DB.
+		Where(&UserEntity{Username: username}).
+		Count(&count)
+	if txDB.Error != nil {
+		return false, txDB.Error
+	}
+	return count > 0, nil
+}
+
+func DeleteUserByID(userID string) error {
 	txDB := database.DB.
 		Where(&UserEntity{UID: userID}).
 		Delete(&UserEntity{})

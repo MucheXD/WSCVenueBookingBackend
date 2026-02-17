@@ -1,7 +1,7 @@
 DROP TABLE IF EXISTS users;
 
 CREATE TABLE users (
-    uid int NOT NULL PRIMARY KEY COMMENT 'Unique User ID',
+    uid CHAR(12) NOT NULL PRIMARY KEY COMMENT 'Unique User ID',
     password_hash VARCHAR(64) COMMENT 'Password Hash',
     password_salt CHAR(16) COMMENT 'Password Salt',
     registered_at TIMESTAMP COMMENT 'Account Creation Time',

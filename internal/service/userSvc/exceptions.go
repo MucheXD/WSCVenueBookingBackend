@@ -16,4 +16,9 @@ var (
 	ErrLoginTokenSaltSecretNotConfigured = errors.New("login token salt secret is not configured")
 	ErrCheckLoginSessionIDInRedis        = errors.New("failed to check login session ID in redis")
 	ErrStoreLoginSessionIDInRedis        = errors.New("failed to store login session ID in redis")
+
+	ErrUsernameAlreadyExists = errors.New("username already exists")
+
+	ErrCheckUsernameExistsInDB = errors.New("failed to check if username exists in database")
+	ErrCreateUserInDB          = errors.New("failed to create user in database")
 )
