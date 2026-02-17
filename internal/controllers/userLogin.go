@@ -9,12 +9,42 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type startLoginSessionForm struct {
+	LoginName string `json:"login_name" binding:"required"`
+}
 type passwordLoginForm struct {
-	LoginName  string `json:"loginName" binding:"required"`
-	LoginToken string `json:"loginToken" binding:"required"`
+	LoginName  string `json:"login_name" binding:"required"`
+	LoginToken string `json:"login_token" binding:"required"`
 }
 
-func PasswordLogin(c *gin.Context) {
+func StartLoginSessionHandler(c *gin.Context) {
+	var req startLoginSessionForm
+	if err := c.ShouldBindJSON(&req); err != nil {
+		apiException.AbortWithException(c, apiException.ParamError, err)
+		return
+	}
+
+	// 获取登录名对应的用户盐值
+	userSalt, err := userSvc.GetUserSalt(req.LoginName)
+	if err != nil {
+		apiException.AbortWithException(c, apiException.ServerError, err)
+		return
+	}
+
+	// 生成登录会话盐值
+	sessionSalt, err := userSvc.GenerateLoginSessionSalt(c.Request.Context(), req.LoginName)
+	if err != nil {
+		apiException.AbortWithException(c, apiException.ServerError, err)
+		return
+	}
+
+	utils.SetSuccessJsonResponse(c, gin.H{
+		"user_salt":    userSalt,
+		"session_salt": sessionSalt,
+	})
+}
+
+func PasswordLoginHandler(c *gin.Context) {
 	var req passwordLoginForm
 	if err := c.ShouldBindJSON(&req); err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
@@ -39,5 +69,5 @@ func PasswordLogin(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.LoginFailed, nil)
 		return
 	}
-	utils.SetSuccessJsonResponse(c, "Login successful")
+	utils.SetSuccessJsonResponse(c, nil)
 }

@@ -150,6 +150,6 @@ func generateSignature(data, secret string) string {
 // loginTokenSaltSecret 懒加载函数，每次使用前调用
 func loadSecret() {
 	secretLoadOnce.Do(func() {
-		loginTokenSaltSecret = config.Config.GetString("service.secret.loginTokenSalt")
+		loginTokenSaltSecret = config.Config.GetString("service.secret.login_token_salt")
 	})
 }
