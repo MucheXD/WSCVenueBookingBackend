@@ -15,8 +15,9 @@ var (
 )
 
 var (
-	PermTypeUser  = BasicUser
-	PermTypeAdmin = BasicUser |
+	RegisterDefault = BasicUser
+	PermTypeUser    = BasicUser
+	PermTypeAdmin   = BasicUser |
 		AllVenueReservation |
 		AllVenueApproval |
 		AllVenueManage |

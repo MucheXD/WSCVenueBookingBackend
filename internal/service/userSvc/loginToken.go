@@ -132,7 +132,7 @@ func GenerateLoginSessionSalt(ctx context.Context, loginName string) (string, er
 	if validBefore <= 0 || validBefore >= 1e11 {
 		return "", fmt.Errorf("%w: %d", ErrLoginTokenSaltValidBeforeOutOfRange, validBefore)
 	}
-	saltData := fmt.Sprintf("%010d", validBefore) + sessionID
+	saltData := fmt.Sprintf("%10d", validBefore) + sessionID
 	loadSecret()
 	if loginTokenSaltSecret == "" {
 		return "", ErrLoginTokenSaltSecretNotConfigured

@@ -6,7 +6,7 @@ type User struct {
 	UID          string
 	PasswordHash string
 	PasswordSalt string
-	CreateTime   time.Time
+	RegisterTime time.Time
 	Username     string
 	SchoolID     string
 	RealName     string

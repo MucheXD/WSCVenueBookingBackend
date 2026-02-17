@@ -10,7 +10,7 @@ var Config = viper.New()
 
 func init() {
 
-	Config.SetConfigName("config")
+	Config.SetConfigName("configs/config")
 	Config.SetConfigType("yaml")
 	Config.AddConfigPath(".")
 	Config.WatchConfig()

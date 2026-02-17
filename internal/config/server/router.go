@@ -7,11 +7,12 @@ import (
 )
 
 func initRouter() {
+	GinEngine.Use(middlewares.UnifiedErrorHandler())
 	GinEngine.GET("/test", func(c *gin.Context) { c.String(200, "success") })
 	GinEngine.GET("/api/get-login-session-salt",
-		middlewares.UnifiedErrorHandler(),
 		controllers.StartLoginSessionHandler)
 	GinEngine.POST("/api/login",
-		middlewares.UnifiedErrorHandler(),
 		controllers.PasswordLoginHandler)
+	GinEngine.POST("/api/register",
+		controllers.UserRegisterHandler)
 }

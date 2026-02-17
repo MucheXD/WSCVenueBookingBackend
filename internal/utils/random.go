@@ -10,7 +10,8 @@ func GenerateRandomInt(max int) int {
 	rnd, err := rand.Int(rand.Reader, big.NewInt(int64(max)))
 	if err != nil {
 		slog.Error("Failed to generate random int", "error", err)
-		return 0
+		// 基础函数不返回 Error，如果发生错误及早崩溃 (Fail-Fast)，避免后续使用未定义的随机数导致更难调试的问题
+		panic("Failed to generate random int: " + err.Error())
 	}
 	return int(rnd.Int64())
 }

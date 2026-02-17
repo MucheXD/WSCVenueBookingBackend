@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS venue_accesses;
 
 CREATE TABLE venue_accesses (
     id INT PRIMARY KEY AUTO_INCREMENT COMMENT 'Unique identifier for each access info, NOT for use',
-    vagid int not null COMMENT 'Unique identifier for each access group',
+    vagid int not null COMMENT 'Unique identifier for each access group, 0 for user default value',
     venue_id int not null COMMENT 'Target venue id of this access info',
     allow_reservation BOOLEAN not null DEFAULT false COMMENT 'Whether this access group allows reservation',
     allow_approval BOOLEAN not null DEFAULT false COMMENT 'Whether this access group allows approval',

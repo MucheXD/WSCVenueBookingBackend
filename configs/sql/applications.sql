@@ -3,7 +3,7 @@ DROP TABLE IF EXISTS applications;
 CREATE TABLE applications (
     id INT PRIMARY KEY AUTO_INCREMENT COMMENT 'Unique identifier for each application, NOT for use',
     venue_id int not null COMMENT 'Target venue id of this application',
-    applicant_uid int not null COMMENT 'User id of the applicant',
+    applicant_uid CHAR(12) not null COMMENT 'User id of the applicant',
     application_status varchar(16) not null COMMENT 'Status of the application',
     description_text TEXT COMMENT 'Description for application',
     has_attachments BOOLEAN DEFAULT FALSE COMMENT '(RepoLayerOnly) Indicates if there are attachments',

@@ -102,7 +102,7 @@ func (u *UserEntity) fromDomain(modelU *models.User) {
 	u.UID = modelU.UID
 	u.PasswordHash = modelU.PasswordHash
 	u.PasswordSalt = modelU.PasswordSalt
-	u.RegisteredAt = modelU.CreateTime
+	u.RegisteredAt = modelU.RegisterTime
 	u.Username = modelU.Username
 	u.SchoolID = modelU.SchoolID
 	u.RealName = modelU.RealName
@@ -115,7 +115,7 @@ func (u *UserEntity) toDomain() *models.User {
 		UID:          u.UID,
 		PasswordHash: u.PasswordHash,
 		PasswordSalt: u.PasswordSalt,
-		CreateTime:   u.RegisteredAt,
+		RegisterTime: u.RegisteredAt,
 		Username:     u.Username,
 		SchoolID:     u.SchoolID,
 		RealName:     u.RealName,

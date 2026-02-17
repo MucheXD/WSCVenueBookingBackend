@@ -1,0 +1,65 @@
+package userSvc
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/repository"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/permission"
+)
+
+func RegisterUser(ctx context.Context, user *models.User) (*models.User, error) {
+	// 用户名去重
+	available, err := repository.IsUsernameExists(user.Username)
+	if err != nil {
+		return nil, fmt.Errorf("%w:%w", ErrCheckUsernameExistsInDB, err)
+	}
+	if !available {
+		return nil, ErrUsernameAlreadyExists
+	}
+	// 创建用户
+	user.UID = generateNewUserID()
+	user.RegisterTime = time.Now()
+	user.PermMap = permission.RegisterDefault
+	user.PermVAGID = 0
+	err = repository.CreateNewUser(user)
+	if err != nil {
+		return nil, fmt.Errorf("%w:%w", ErrCreateUserInDB, err)
+	}
+	return user, nil
+}
+
+// 生成新的用户ID，确保唯一性
+func generateNewUserID() string {
+	// UID 生成方案：偏移的毫秒UNIX时间戳(14位->9字符) + 随机字符串(3字符)
+	// TTTTTTTTTRRR
+	const timestampOffset = 1145141919810               // perfect offset fit 13 digits for unix, surely random xd
+	const alphabet = "UXQG4Y7261EATRJ5VNL3BD9PMZKSH8FC" // 32 chars, without 0 O I W
+
+	tsPart := convert10To32Inverse((time.Now().UnixMilli()-timestampOffset)%0x1FFFFFFFFFFF, alphabet) // 0x1FFFFFFFFFFF = 32^9 - 1, 9 chars for timestamp part
+	randPart := utils.GenerateRandomString(3, alphabet)
+	ostr := tsPart + randPart
+	// TTTTTTTTTRRR -> TTTTTTTRTRTR
+	return ostr[0:7] + ostr[9:10] + ostr[7:8] + ostr[10:11] + ostr[8:9] + ostr[11:12]
+}
+
+// 使用指定字符表将整数转换为逆序32进制字符串，用于UID生成
+func convert10To32Inverse(n int64, alphabet string) string {
+	if n == 0 {
+		return string(alphabet[0])
+	}
+	if n < 0 {
+		n = -n
+	}
+	var result []byte
+	// 辗转相除法
+	for n > 0 {
+		remainder := n % 32
+		result = append(result, alphabet[remainder])
+		n = n / 32
+	}
+	return string(result)
+}
