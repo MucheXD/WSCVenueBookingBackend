@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"strconv"
@@ -31,16 +30,23 @@ const loginTokenSaltValidDuration = 15 * time.Second
 var secretLoadOnce sync.Once
 var loginTokenSaltSecret string
 
-func TryPasswordLogin(ctx context.Context, loginName, loginToken string) (bool, error) {
+func TryPasswordLogin(ctx context.Context, loginName, loginToken string) (*models.User, error) {
 	userFound, err := repository.GetUniqueUserByUsername(loginName)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	// 此处可以添加对 Email 登录的尝试，此处跳过
 	if userFound == nil {
-		return false, nil
+		return nil, nil
 	}
-	return checkLoginToken(ctx, userFound, loginToken)
+	isValid, err := checkLoginToken(ctx, userFound, loginToken)
+	if err != nil {
+		return nil, err
+	}
+	if !isValid {
+		return nil, nil
+	}
+	return userFound, nil
 }
 
 // Check Login Token
@@ -90,13 +96,17 @@ func checkLoginToken(ctx context.Context, user *models.User, loginToken string) 
 		return false, ErrLoginSessionIDInvalid
 	}
 
-	// base64 解码传入 R 值
-	hashedPwdHash, err := base64.StdEncoding.DecodeString(loginToken[106:])
+	// 解码传入 R 值
+	hashedPwdHash, err := hex.DecodeString(loginToken[106:])
 	if err != nil {
 		return false, fmt.Errorf("%w: %w", ErrDecodeLoginTokenPasswordHash, err)
 	}
 	// 通过 loginToken 内的 loginSessionSalt 加盐计算正确 R 值并比较
-	expectedHash := sha256.Sum256([]byte(loginToken[:106] + user.PasswordHash))
+	expectedPasswordHash, err := hex.DecodeString(user.PasswordHash)
+	if err != nil {
+		return false, fmt.Errorf("%w: %w", ErrUserPasswordHashInvalid, err)
+	}
+	expectedHash := sha256.Sum256(append([]byte(loginToken[:106]), expectedPasswordHash...))
 	if !hmac.Equal(hashedPwdHash, expectedHash[:]) {
 		return false, nil // 密码不匹配算预期发生的行为
 	}

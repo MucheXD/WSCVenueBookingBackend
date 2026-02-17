@@ -55,7 +55,7 @@ func UserRegisterHandler(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
-	utils.SetSuccessJsonResponse(c, createdUser.UID)
+	utils.SetSuccessJsonResponse(c, map[string]string{"UID": createdUser.UID})
 }
 
 // 预编译正则表达式以提高性能

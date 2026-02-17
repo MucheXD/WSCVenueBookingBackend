@@ -6,11 +6,12 @@ import (
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/service/userSvc"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/apiException"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/webtoken"
 	"github.com/gin-gonic/gin"
 )
 
 type startLoginSessionForm struct {
-	LoginName string `json:"login_name" binding:"required"`
+	LoginName string `form:"login_name" binding:"required"`
 }
 type passwordLoginForm struct {
 	LoginName  string `json:"login_name" binding:"required"`
@@ -19,12 +20,12 @@ type passwordLoginForm struct {
 
 func StartLoginSessionHandler(c *gin.Context) {
 	var req startLoginSessionForm
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindQuery(&req); err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
 
-	// 获取登录名对应的用户盐值
+	// 获取登录名对应的用户盐值，若登录名无对应用户，则返回随机盐值
 	userSalt, err := userSvc.GetUserSalt(req.LoginName)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
@@ -38,10 +39,9 @@ func StartLoginSessionHandler(c *gin.Context) {
 		return
 	}
 
-	utils.SetSuccessJsonResponse(c, gin.H{
+	utils.SetSuccessJsonResponse(c, map[string]string{
 		"user_salt":    userSalt,
-		"session_salt": sessionSalt,
-	})
+		"session_salt": sessionSalt})
 }
 
 func PasswordLoginHandler(c *gin.Context) {
@@ -50,7 +50,7 @@ func PasswordLoginHandler(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
-	isValid, err := userSvc.TryPasswordLogin(c.Request.Context(), req.LoginName, req.LoginToken)
+	userVerified, err := userSvc.TryPasswordLogin(c.Request.Context(), req.LoginName, req.LoginToken)
 	if err != nil {
 		if errors.Is(err, userSvc.ErrLoginTokenExpired) {
 			apiException.AbortWithException(c, apiException.LoginTimeout, err)
@@ -65,9 +65,22 @@ func PasswordLoginHandler(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.LoginInvalid, err)
 		return
 	}
-	if !isValid {
+	if userVerified == nil {
 		apiException.AbortWithException(c, apiException.LoginFailed, nil)
 		return
 	}
-	utils.SetSuccessJsonResponse(c, nil)
+	wt, err := webtoken.GenerateToken(webtoken.TokenData{
+		UserID:             userVerified.UID,
+		SysPermissionMap:   userVerified.PermMap,
+		VenueAccessGroupID: userVerified.PermVAGID,
+	})
+	if err != nil {
+		apiException.AbortWithException(c, apiException.ServerError, err)
+		return
+	}
+	utils.SetSuccessJsonResponse(c, map[string]string{
+		"uid":          userVerified.UID,
+		"display_name": userVerified.Username,
+		"webtoken":     wt,
+	})
 }

@@ -12,6 +12,7 @@ var (
 	ErrLoginTokenSignatureMismatch         = errors.New("login token signature mismatch")
 	ErrDecodeLoginTokenPasswordHash        = errors.New("failed to decode login token password hash")
 	ErrLoginTokenSaltValidBeforeOutOfRange = errors.New("generated login token salt valid before is out of range")
+	ErrUserPasswordHashInvalid             = errors.New("user password hash in database is invalid")
 
 	ErrLoginTokenSaltSecretNotConfigured = errors.New("login token salt secret is not configured")
 	ErrCheckLoginSessionIDInRedis        = errors.New("failed to check login session ID in redis")
