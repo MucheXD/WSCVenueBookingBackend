@@ -27,6 +27,7 @@ func CreateNewVenueCampus(modelC *models.VenueCampus) error {
 func GetVenueCampusByID(campusID int) (*models.VenueCampus, error) {
 	var campusEntity VenueCampusEntity
 	txDB := database.DB.
+		Model(&VenueCampusEntity{}).
 		Where(&VenueCampusEntity{CampusID: campusID}).
 		Take(&campusEntity)
 	if txDB.Error != nil {
@@ -37,6 +38,7 @@ func GetVenueCampusByID(campusID int) (*models.VenueCampus, error) {
 
 func DeleteVenueCampusByID(campusID int) error {
 	txDB := database.DB.
+		Model(&VenueCampusEntity{}).
 		Where(&VenueCampusEntity{CampusID: campusID}).
 		Delete(&VenueCampusEntity{})
 	if txDB.Error != nil {

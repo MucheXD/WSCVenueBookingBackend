@@ -28,6 +28,7 @@ func CreateNewVenueBuilding(modelB *models.VenueBuilding) error {
 func GetVenueBuildingByID(buildingID int) (*models.VenueBuilding, error) {
 	var buildingEntity VenueBuildingEntity
 	txDB := database.DB.
+		Model(&VenueBuildingEntity{}).
 		Where(&VenueBuildingEntity{BuildingID: buildingID}).
 		Take(&buildingEntity)
 	if txDB.Error != nil {
@@ -38,6 +39,7 @@ func GetVenueBuildingByID(buildingID int) (*models.VenueBuilding, error) {
 
 func DeleteVenueBuildingByID(buildingID int) error {
 	txDB := database.DB.
+		Model(&VenueBuildingEntity{}).
 		Where(&VenueBuildingEntity{BuildingID: buildingID}).
 		Delete(&VenueBuildingEntity{})
 	if txDB.Error != nil {

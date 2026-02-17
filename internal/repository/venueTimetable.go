@@ -36,6 +36,7 @@ func CreateNewVenueTimetable(modelT *models.VenueTimetable) error {
 func GetVenueTimetableByVenueID(venueID int) (*models.VenueTimetable, error) {
 	var entities []VenueTimeslotEntity
 	txDB := database.DB.
+		Model(&VenueTimeslotEntity{}).
 		Where(&VenueTimeslotEntity{VenueID: venueID}).
 		Order("start_time ASC").
 		Find(&entities)
@@ -50,6 +51,7 @@ func GetVenueTimetableByVenueID(venueID int) (*models.VenueTimetable, error) {
 
 func DeleteVenueTimetableByVenueID(venueID int) error {
 	txDB := database.DB.
+		Model(&VenueTimeslotEntity{}).
 		Where(&VenueTimeslotEntity{VenueID: venueID}).
 		Delete(&VenueTimeslotEntity{})
 	if txDB.Error != nil {

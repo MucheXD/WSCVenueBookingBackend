@@ -32,6 +32,7 @@ func CreateNewVenue(modelV *models.Venue) error {
 func GetVenueByID(venueID int) (*models.Venue, error) {
 	var venueEntity VenueEntity
 	txDB := database.DB.
+		Model(&VenueEntity{}).
 		Where(&VenueEntity{VenueID: venueID}).
 		Take(&venueEntity)
 	if txDB.Error != nil {
@@ -42,6 +43,7 @@ func GetVenueByID(venueID int) (*models.Venue, error) {
 
 func DeleteVenueByID(venueID int) error {
 	txDB := database.DB.
+		Model(&VenueEntity{}).
 		Where(&VenueEntity{VenueID: venueID}).
 		Delete(&VenueEntity{})
 	if txDB.Error != nil {

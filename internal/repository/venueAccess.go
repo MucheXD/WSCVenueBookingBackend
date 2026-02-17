@@ -33,6 +33,7 @@ func CreateNewVenueAccessGroup(modelA *models.VenueAccess) error {
 func GetVenueAccessGroupByID(vagID int) (*models.VenueAccess, error) {
 	var entities []VenueAccessEntity
 	txDB := database.DB.
+		Model(&VenueAccessEntity{}).
 		Where(&VenueAccessEntity{VAGID: vagID}).
 		Find(&entities)
 	if txDB.Error != nil {
@@ -46,6 +47,7 @@ func GetVenueAccessGroupByID(vagID int) (*models.VenueAccess, error) {
 
 func DeleteVenueAccessGroupByID(vagID int) error {
 	txDB := database.DB.
+		Model(&VenueAccessEntity{}).
 		Where(&VenueAccessEntity{VAGID: vagID}).
 		Delete(&VenueAccessEntity{})
 	if txDB.Error != nil {

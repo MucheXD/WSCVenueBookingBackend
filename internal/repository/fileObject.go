@@ -47,14 +47,16 @@ func (FileObjectEntity) TableName() string {
 
 func FileObjectLinked(fileToken string) error {
 	return database.DB.
-		Where(FileObjectEntity{FileToken: fileToken}).
+		Model(&FileObjectEntity{}).
+		Where(&FileObjectEntity{FileToken: fileToken}).
 		Update("link_count", gorm.Expr("link_count + ?", 1)).
 		Error
 }
 
 func FileObjectUnlinked(fileToken string) error {
 	return database.DB.
-		Where(FileObjectEntity{FileToken: fileToken}).
+		Model(&FileObjectEntity{}).
+		Where(&FileObjectEntity{FileToken: fileToken}).
 		Update("link_count", gorm.Expr("GREATEST(link_count - 1, 0)")).
 		Error
 }

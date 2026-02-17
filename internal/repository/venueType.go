@@ -28,6 +28,7 @@ func CreateNewVenueType(modelT *models.VenueType) error {
 func GetVenueTypeByID(typeID int) (*models.VenueType, error) {
 	var typeEntity VenueTypeEntity
 	txDB := database.DB.
+		Model(&VenueTypeEntity{}).
 		Where(&VenueTypeEntity{TypeID: typeID}).
 		Take(&typeEntity)
 	if txDB.Error != nil {
@@ -38,6 +39,7 @@ func GetVenueTypeByID(typeID int) (*models.VenueType, error) {
 
 func DeleteVenueTypeByID(typeID int) error {
 	txDB := database.DB.
+		Model(&VenueTypeEntity{}).
 		Where(&VenueTypeEntity{TypeID: typeID}).
 		Delete(&VenueTypeEntity{})
 	if txDB.Error != nil {

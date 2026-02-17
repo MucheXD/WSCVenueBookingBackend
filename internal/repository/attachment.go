@@ -24,6 +24,7 @@ func (AttachmentEntity) TableName() string {
 func GetAttachmentsByBiz(bizType, bizID int) ([]models.Attachment, error) {
 	var attachmentEntities []AttachmentEntity
 	txDB := database.DB.
+		Model(&AttachmentEntity{}).
 		Where(&AttachmentEntity{BizType: bizType, BizID: bizID}).
 		Find(&attachmentEntities)
 	if txDB.Error != nil {

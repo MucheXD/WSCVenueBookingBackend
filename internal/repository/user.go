@@ -37,6 +37,7 @@ func CreateNewUser(modelU *models.User) error {
 func GetUserByID(userID string) (*models.User, error) {
 	var userEntity UserEntity
 	txDB := database.DB.
+		Model(&UserEntity{}).
 		Where(&UserEntity{UID: userID}).
 		Take(&userEntity)
 	if txDB.Error != nil {
@@ -63,6 +64,7 @@ func GetUniqueUserByUsername(username string) (*models.User, error) {
 func FoundUserByUsername(username string) ([]*models.User, error) {
 	var userEntities []UserEntity
 	txDB := database.DB.
+		Model(&UserEntity{}).
 		Where(&UserEntity{Username: username}).
 		Find(&userEntities)
 	if txDB.Error != nil {
@@ -78,6 +80,7 @@ func FoundUserByUsername(username string) ([]*models.User, error) {
 func IsUsernameExists(username string) (bool, error) {
 	var count int64
 	txDB := database.DB.
+		Model(&UserEntity{}).
 		Where(&UserEntity{Username: username}).
 		Count(&count)
 	if txDB.Error != nil {
@@ -88,6 +91,7 @@ func IsUsernameExists(username string) (bool, error) {
 
 func DeleteUserByID(userID string) error {
 	txDB := database.DB.
+		Model(&UserEntity{}).
 		Where(&UserEntity{UID: userID}).
 		Delete(&UserEntity{})
 	if txDB.Error != nil {
