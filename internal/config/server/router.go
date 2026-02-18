@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/MucheXD/WSCVenueBookingBackend/internal/controllers"
+	controllers "github.com/MucheXD/WSCVenueBookingBackend/internal/controllers/user"
 	middlewares "github.com/MucheXD/WSCVenueBookingBackend/internal/middleware"
 	"github.com/gin-gonic/gin"
 )
@@ -15,4 +15,6 @@ func initRouter() {
 		controllers.PasswordLoginHandler)
 	GinEngine.POST("/api/register",
 		controllers.UserRegisterHandler)
+	GinEngine.PATCH("/api/user/edit-profile", middlewares.AuthMiddleware(),
+		controllers.UserEditHandler)
 }

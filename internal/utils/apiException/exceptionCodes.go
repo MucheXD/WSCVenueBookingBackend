@@ -16,4 +16,5 @@ var (
 	UsernameInvalid       = NewException(http.StatusBadRequest, 201003, "用户名不合法")
 	SchoolIDInvalid       = NewException(http.StatusBadRequest, 201004, "学校ID不合法")
 	PasswordOrSaltInvalid = NewException(http.StatusBadRequest, 201005, "密码或盐值不合法")
+	PhoneNumberInvalid = NewException(http.StatusBadRequest, 201006, "联系电话不合法")
 )
