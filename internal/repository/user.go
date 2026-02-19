@@ -100,7 +100,7 @@ func DeleteUserByID(userID string) error {
 	}
 	return nil
 }
-func EditUser(modelU *models.User) error {
+func UpdateUser(modelU *models.User) error {
 	var userEntity UserEntity
 	userEntity.fromDomain(modelU)
 	if err := database.DB.Model(&UserEntity{}).
@@ -120,7 +120,7 @@ func (u *UserEntity) fromDomain(modelU *models.User) {
 	u.RegisteredAt = modelU.RegisterTime
 	u.Username = modelU.Username
 	u.SchoolID = modelU.SchoolID
-	u.PhoneNumber=modelU.PhoneNumber
+	u.PhoneNumber = modelU.PhoneNumber
 	u.RealName = modelU.RealName
 	u.PermMap = modelU.PermMap
 	u.PermVAGID = modelU.PermVAGID

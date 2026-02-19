@@ -3,6 +3,7 @@ package controllers
 import (
 	"regexp"
 
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/service/userSvc"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/apiException"
@@ -13,7 +14,7 @@ type UserEditForm struct {
 	PhoneNumber string `form:"phone_number" binding:"required"`
 }
 
-func UserEditHandler(c *gin.Context){
+func UpdateUserProfileHandler(c *gin.Context) {
 	var req UserEditForm
 	if err := c.ShouldBindJSON(&req); err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
@@ -24,12 +25,14 @@ func UserEditHandler(c *gin.Context){
 		return
 	}
 
-	err:=userSvc.EditUser(c,req.PhoneNumber)
+	err := userSvc.UpdateUser(c.Request.Context(), c.GetString("UserID"),
+		models.User{PhoneNumber: req.PhoneNumber})
+
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
-	utils.SetSuccessJsonResponse(c,nil)
+	utils.SetSuccessJsonResponse(c, nil)
 }
 
 var phoneNumberRegex = regexp.MustCompile(`^\d{11}$`)

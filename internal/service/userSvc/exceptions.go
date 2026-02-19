@@ -22,5 +22,5 @@ var (
 
 	ErrCheckUsernameExistsInDB = errors.New("failed to check if username exists in database")
 	ErrCreateUserInDB          = errors.New("failed to create user in database")
-	ErrEditUserInDB          = errors.New("failed to edit user in database")
+	ErrUpdateUserInDB          = errors.New("failed to edit user in database")
 )

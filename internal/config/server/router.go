@@ -16,5 +16,5 @@ func initRouter() {
 	GinEngine.POST("/api/register",
 		controllers.UserRegisterHandler)
 	GinEngine.PATCH("/api/user/edit-profile", middlewares.AuthMiddleware(),
-		controllers.UserEditHandler)
+		controllers.UpdateUserProfileHandler)
 }
