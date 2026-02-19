@@ -16,6 +16,7 @@ type UserEntity struct {
 	RegisteredAt time.Time `gorm:"column:registered_at"`
 	Username     string    `gorm:"column:username"`
 	SchoolID     string    `gorm:"column:school_id"`
+	PhoneNumber  string    `gorm:"column:phone_number"`
 	RealName     string    `gorm:"column:real_name"`
 	PermMap      uint64    `gorm:"column:perm_map"`
 	PermVAGID    int       `gorm:"column:perm_vagid"`
@@ -99,6 +100,16 @@ func DeleteUserByID(userID string) error {
 	}
 	return nil
 }
+func EditUser(modelU *models.User) error {
+	var userEntity UserEntity
+	userEntity.fromDomain(modelU)
+	if err := database.DB.Model(&UserEntity{}).
+		Where(&UserEntity{UID: userEntity.UID}).
+		Updates(&userEntity).Error; err != nil {
+		return err
+	}
+	return nil
+}
 
 // Entity-Domain Conversion (Private Methods)
 
@@ -109,6 +120,7 @@ func (u *UserEntity) fromDomain(modelU *models.User) {
 	u.RegisteredAt = modelU.RegisterTime
 	u.Username = modelU.Username
 	u.SchoolID = modelU.SchoolID
+	u.PhoneNumber=modelU.PhoneNumber
 	u.RealName = modelU.RealName
 	u.PermMap = modelU.PermMap
 	u.PermVAGID = modelU.PermVAGID
@@ -122,6 +134,7 @@ func (u *UserEntity) toDomain() *models.User {
 		RegisterTime: u.RegisteredAt,
 		Username:     u.Username,
 		SchoolID:     u.SchoolID,
+		PhoneNumber:  u.PhoneNumber,
 		RealName:     u.RealName,
 		PermMap:      u.PermMap,
 		PermVAGID:    u.PermVAGID,

@@ -9,6 +9,7 @@ type User struct {
 	RegisterTime time.Time
 	Username     string
 	SchoolID     string
+	PhoneNumber  string
 	RealName     string
 	PermMap      uint64
 	PermVAGID    int

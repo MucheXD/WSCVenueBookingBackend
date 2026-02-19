@@ -24,6 +24,7 @@ func RegisterUser(ctx context.Context, user *models.User) (*models.User, error) 
 	// 创建用户
 	user.UID = generateNewUserID()
 	user.RegisterTime = time.Now().UTC()
+	user.PhoneNumber=""
 	user.PermMap = permission.RegisterDefault
 	user.PermVAGID = 0
 	err = repository.CreateNewUser(user)
