@@ -1,8 +1,12 @@
 package controllers
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
+	"fmt"
 
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/repository"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/service/userSvc"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/apiException"
@@ -38,6 +42,10 @@ func StartLoginSessionHandler(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
+	user,_:=repository.GetUniqueUserByUsername(req.LoginName)
+	data := sha256.Sum256(append([]byte(sessionSalt), []byte(user.PasswordHash)...))
+	fmt.Println(data)
+	fmt.Println(hex.EncodeToString(data[:]))
 
 	utils.SetSuccessJsonResponse(c, map[string]string{
 		"user_salt":    userSalt,
