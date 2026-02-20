@@ -55,7 +55,6 @@ func ListVenuesHandler(c *gin.Context) {
 		return
 	}
 
-	// cmt: 已修改-使用gin的QueryArray解析数组参数
 	// 解析查询参数
 	buildingIDs := queryArrayAtoi(c.QueryArray("b"))
 	typeIDs := queryArrayAtoi(c.QueryArray("t"))

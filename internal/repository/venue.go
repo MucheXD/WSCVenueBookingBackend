@@ -115,7 +115,6 @@ func ListVenuesWithQuery(opts VenueQueryOptions) ([]*models.Venue, error) {
 	if len(opts.Permissions) > 0 {
 		permConditions := database.DB.Where("1 = 0") // 初始化为false
 		for _, perm := range opts.Permissions {
-			// TODO: 此处避免使用硬编码文本
 			switch perm {
 			case venuePermission.Reserve:
 				permConditions = permConditions.Or("va.allow_reserve = ?", true)

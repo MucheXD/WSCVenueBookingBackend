@@ -42,6 +42,8 @@ func GetVenueLocationsHandler(c *gin.Context) {
 	}
 
 	// TODO: 链路优化，repo 层直接支持联表查询
+	// 此链路调用的两个 ByVenueIDs 方法会产生很大的查询指令，需要优化
+
 	// 调用服务层获取场地ID列表
 	venueIDs, err := venueSvc.GetVenueIDsByVAGID(c.Request.Context(), vagid)
 	if err != nil {

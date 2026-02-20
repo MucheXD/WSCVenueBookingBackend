@@ -13,37 +13,30 @@ var (
 	cacheLock        sync.RWMutex
 )
 
-// DataLoader 定义数据加载器接口，用于获取权限数据
-type DataLoader interface {
-	GetAllVenueAccessGroupIDs() ([]int, error)
-	GetVenueAccessGroupByID(vagid int) (*models.VenueAccess, error)
+// VenueAccessDataLoader 定义数据加载器接口，用于获取权限数据
+type VenueAccessDataLoader interface {
+	// GetAllVenueAccesses 一次性查询所有权限组数据
+	GetAllVenueAccesses() ([]*models.VenueAccess, error)
 }
 
 // RefreshVenueAccessCache 从数据库加载所有权限数据到内存缓存
 // 这个函数应该在应用启动时和更新权限后调用
 // 由于 util 不应该依赖 repo，因此使用依赖注入的方式获取数据加载器
-func RefreshVenueAccessCache(loader DataLoader) error {
+func RefreshVenueAccessCache(loader VenueAccessDataLoader) error {
 	slog.Debug("Starting to refresh venue access cache from database")
 
-	// 获取所有权限组ID
-	vagids, err := loader.GetAllVenueAccessGroupIDs()
+	// 一次性查询所有权限组数据
+	venueAccesses, err := loader.GetAllVenueAccesses()
 	if err != nil {
-		slog.Error("Failed to get all venue access group IDs", "error", err)
+		slog.Error("Failed to get all venue accesses", "error", err)
 		return err
 	}
 
-	// 临时缓存，避免加载失败时污染现有缓存
-	tempCache := make(map[int]*models.VenueAccess)
-
-	// 加载每个权限组
-	for _, vagid := range vagids {
-		va, err := loader.GetVenueAccessGroupByID(vagid)
-		if err != nil {
-			slog.Warn("Failed to load venue access group", "vagid", vagid, "error", err)
-			continue
-		}
+	// 构建缓存 map
+	tempCache := make(map[int]*models.VenueAccess, len(venueAccesses))
+	for _, va := range venueAccesses {
 		if va != nil {
-			tempCache[vagid] = va
+			tempCache[va.VAGID] = va
 		}
 	}
 

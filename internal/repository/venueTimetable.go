@@ -1,5 +1,3 @@
-// TODO: AI Generated Code UNCHECKED
-
 package repository
 
 import (

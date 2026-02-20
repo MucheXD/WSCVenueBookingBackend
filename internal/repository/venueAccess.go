@@ -11,15 +11,11 @@ import (
 // 向 venuePermission 模块提供所需的获取权限数据的方法
 type venueAccessLoader struct{}
 
-func (l *venueAccessLoader) GetAllVenueAccessGroupIDs() ([]int, error) {
-	return GetAllVenueAccessGroupIDs()
+func (l *venueAccessLoader) GetAllVenueAccesses() ([]*models.VenueAccess, error) {
+	return GetAllVenueAccesses()
 }
 
-func (l *venueAccessLoader) GetVenueAccessGroupByID(vagid int) (*models.VenueAccess, error) {
-	return GetVenueAccessGroupByID(vagid)
-}
-
-func NewVenueAccessLoader() venuePermission.DataLoader {
+func NewVenueAccessLoader() venuePermission.VenueAccessDataLoader {
 	return &venueAccessLoader{}
 }
 
@@ -73,6 +69,46 @@ func DeleteVenueAccessGroupByID(vagID int) error {
 	return nil
 }
 
+// // GetAllVenueAccessGroupIDs 获取所有存在的权限组ID
+// func GetAllVenueAccessGroupIDs() ([]int, error) {
+// 	var vagids []int
+// 	txDB := database.DB.
+// 		Model(&VenueAccessEntity{}).
+// 		Distinct("vagid").
+// 		Pluck("vagid", &vagids)
+// 	if txDB.Error != nil {
+// 		return nil, txDB.Error
+// 	}
+// 	return vagids, nil
+// }
+
+// GetAllVenueAccesses 一次性查询所有权限组数据
+// 该方法会查询整个 venue_accesses 表，并按 VAGID 分组整理为 VenueAccess 对象
+func GetAllVenueAccesses() ([]*models.VenueAccess, error) {
+	var entities []VenueAccessEntity
+	txDB := database.DB.
+		Model(&VenueAccessEntity{}).
+		Find(&entities)
+	if txDB.Error != nil {
+		return nil, txDB.Error
+	}
+
+	// 按 VAGID 分组
+	groupedEntities := make(map[int][]VenueAccessEntity)
+	for _, entity := range entities {
+		groupedEntities[entity.VAGID] = append(groupedEntities[entity.VAGID], entity)
+	}
+
+	// 将每组实体转换为 VenueAccess 模型
+	result := make([]*models.VenueAccess, 0, len(groupedEntities))
+	for _, entities := range groupedEntities {
+		if va := convVenueAccessFromEntity(entities); va != nil {
+			result = append(result, va)
+		}
+	}
+	return result, nil
+}
+
 // Entity-Domain Conversion
 
 // model-VenueAccess = vagID + [venueID]*N*permissions
@@ -109,6 +145,8 @@ func convVenueAccessToEntity(modelA *models.VenueAccess) []VenueAccessEntity {
 	return mergeVenueAccessEntities(entities)
 }
 
+// 将相同 vagid 的数据实体合并为一个 VenueAccess 模型对象
+// 注意：输入实体 vagid 必须相同，如果不同，与首个实体不匹配的记录将被丢弃
 func convVenueAccessFromEntity(entities []VenueAccessEntity) *models.VenueAccess {
 	if len(entities) == 0 {
 		return nil
@@ -122,6 +160,9 @@ func convVenueAccessFromEntity(entities []VenueAccessEntity) *models.VenueAccess
 		AllowManage:   make(map[int]struct{}),
 	}
 	for _, entity := range entities {
+		if entity.VAGID != vagid {
+			continue // 过滤掉 vagid 不匹配的记录，理论上不应该有
+		}
 		if entity.AllowReserve {
 			modelA.AllowReserve[entity.VenueID] = struct{}{}
 		}
@@ -158,17 +199,4 @@ func mergeVenueAccessEntities(entities []VenueAccessEntity) []VenueAccessEntity 
 		merged = append(merged, *v)
 	}
 	return merged
-}
-
-// GetAllVenueAccessGroupIDs 获取所有存在的权限组ID
-func GetAllVenueAccessGroupIDs() ([]int, error) {
-	var vagids []int
-	txDB := database.DB.
-		Model(&VenueAccessEntity{}).
-		Distinct("vagid").
-		Pluck("vagid", &vagids)
-	if txDB.Error != nil {
-		return nil, txDB.Error
-	}
-	return vagids, nil
 }

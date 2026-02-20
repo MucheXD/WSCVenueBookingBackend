@@ -19,22 +19,13 @@ func CreateVenue(ctx context.Context, venue *models.Venue) (int, error) {
 	if venue.BuildingID == 0 {
 		return 0, ErrVenueBuildingRequired
 	}
-	// cmt: 可移除，使用外链绑定在创建时自动校验
-	// 校验楼区是否存在
-	exists, err := repository.VenueBuildingExists(venue.BuildingID)
-	if err != nil {
-		return 0, fmt.Errorf("%w: %w", ErrVenueBuildingInvalid, err)
-	}
-	if !exists {
-		return 0, ErrVenueBuildingInvalid
-	}
 
 	// 创建时默认设置为启用状态
 	venue.IsActive = true
 
 	// 创建场地
 	venueID, err := repository.CreateNewVenue(venue)
-	if err != nil {
+	if err != nil { // ENH: 此处未区分数据库错误与外链错误，可以根据需要进一步细化错误类型
 		return 0, fmt.Errorf("%w: %w", ErrVenueCreateInDB, err)
 	}
 
