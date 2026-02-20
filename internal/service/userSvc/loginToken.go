@@ -49,24 +49,25 @@ func TryPasswordLogin(ctx context.Context, loginName, loginToken string) (*model
 	return userFound, nil
 }
 
-func ChangePassword(ctx context.Context,loginToken string,username string,newPassword string)(bool,error){
-	user, err := repository.GetUniqueUserByUsername(username)
+func ChangePasswordByOld(ctx context.Context, verifyToken string, uid string, newPwd string, newSalt string) error {
+	user, err := repository.GetUserByID(uid)
 	if err != nil {
-		return false,err
+		return err
 	}
-	isValid, err := checkLoginToken(ctx, user, loginToken)
+	isValid, err := checkLoginToken(ctx, user, verifyToken)
 	if err != nil {
-		return false,err
+		return err
 	}
 	if !isValid {
-		return false, nil
+		return ErrUserNotVerified
 	}
-	user.PasswordHash=newPassword
-	err=repository.EditUser(user)
-	if err!=nil{
-		return false,err
+	user.PasswordHash = newPwd
+	user.PasswordSalt = newSalt
+	err = repository.UpdateUser(user)
+	if err != nil {
+		return err
 	}
-	return true, nil
+	return nil
 }
 
 // Check Login Token

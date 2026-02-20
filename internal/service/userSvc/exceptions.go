@@ -13,6 +13,7 @@ var (
 	ErrDecodeLoginTokenPasswordHash        = errors.New("failed to decode login token password hash")
 	ErrLoginTokenSaltValidBeforeOutOfRange = errors.New("generated login token salt valid before is out of range")
 	ErrUserPasswordHashInvalid             = errors.New("user password hash in database is invalid")
+	ErrUserNotVerified                     = errors.New("user is not verified for changing password")
 
 	ErrLoginTokenSaltSecretNotConfigured = errors.New("login token salt secret is not configured")
 	ErrCheckLoginSessionIDInRedis        = errors.New("failed to check login session ID in redis")
