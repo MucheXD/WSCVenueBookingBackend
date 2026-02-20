@@ -7,12 +7,12 @@ import (
 )
 
 type VenueAccessEntity struct {
-	VAGID            int  `gorm:"column:vagid"`
-	VenueID          int  `gorm:"column:venue_id"`
-	AllowReservation bool `gorm:"column:allow_reservation"`
-	AllowApproval    bool `gorm:"column:allow_approval"`
-	AllowEdit        bool `gorm:"column:allow_edit"`
-	AllowManage      bool `gorm:"column:allow_manage"`
+	VAGID         int  `gorm:"column:vagid"`
+	VenueID       int  `gorm:"column:venue_id"`
+	AllowReserve  bool `gorm:"column:allow_reserve"`
+	AllowApproval bool `gorm:"column:allow_approval"`
+	AllowEdit     bool `gorm:"column:allow_edit"`
+	AllowManage   bool `gorm:"column:allow_manage"`
 }
 
 func (VenueAccessEntity) TableName() string {
@@ -83,7 +83,7 @@ func convVenueAccessToEntity(modelA *models.VenueAccess) []VenueAccessEntity {
 	}
 	// 下述步骤分离每种权限的每个目标场地作为独立的一条实体记录
 	// 结果条目数为各权限对应的目标场地数之和，每个实体只有一个 true 权限字段
-	appendEntities(modelA.AllowReservation, func(e *VenueAccessEntity) { e.AllowReservation = true })
+	appendEntities(modelA.AllowReserve, func(e *VenueAccessEntity) { e.AllowReserve = true })
 	appendEntities(modelA.AllowApproval, func(e *VenueAccessEntity) { e.AllowApproval = true })
 	appendEntities(modelA.AllowEdit, func(e *VenueAccessEntity) { e.AllowEdit = true })
 	appendEntities(modelA.AllowManage, func(e *VenueAccessEntity) { e.AllowManage = true })
@@ -98,15 +98,15 @@ func convVenueAccessFromEntity(entities []VenueAccessEntity) *models.VenueAccess
 	}
 	vagid := entities[0].VAGID
 	modelA := &models.VenueAccess{
-		VAGID:            vagid,
-		AllowReservation: make(map[int]struct{}),
-		AllowApproval:    make(map[int]struct{}),
-		AllowEdit:        make(map[int]struct{}),
-		AllowManage:      make(map[int]struct{}),
+		VAGID:         vagid,
+		AllowReserve:  make(map[int]struct{}),
+		AllowApproval: make(map[int]struct{}),
+		AllowEdit:     make(map[int]struct{}),
+		AllowManage:   make(map[int]struct{}),
 	}
 	for _, entity := range entities {
-		if entity.AllowReservation {
-			modelA.AllowReservation[entity.VenueID] = struct{}{}
+		if entity.AllowReserve {
+			modelA.AllowReserve[entity.VenueID] = struct{}{}
 		}
 		if entity.AllowApproval {
 			modelA.AllowApproval[entity.VenueID] = struct{}{}
@@ -127,7 +127,7 @@ func mergeVenueAccessEntities(entities []VenueAccessEntity) []VenueAccessEntity 
 	for _, e := range entities {
 		key := [2]int{e.VAGID, e.VenueID}
 		if exist, ok := result[key]; ok {
-			exist.AllowReservation = exist.AllowReservation || e.AllowReservation
+			exist.AllowReserve = exist.AllowReserve || e.AllowReserve
 			exist.AllowApproval = exist.AllowApproval || e.AllowApproval
 			exist.AllowEdit = exist.AllowEdit || e.AllowEdit
 			exist.AllowManage = exist.AllowManage || e.AllowManage
@@ -141,4 +141,16 @@ func mergeVenueAccessEntities(entities []VenueAccessEntity) []VenueAccessEntity 
 		merged = append(merged, *v)
 	}
 	return merged
+}
+// GetAllVenueAccessGroupIDs 获取所有存在的权限组ID
+func GetAllVenueAccessGroupIDs() ([]int, error) {
+	var vagids []int
+	txDB := database.DB.
+		Model(&VenueAccessEntity{}).
+		Distinct("vagid").
+		Pluck("vagid", &vagids)
+	if txDB.Error != nil {
+		return nil, txDB.Error
+	}
+	return vagids, nil
 }
