@@ -3,8 +3,25 @@ package repository
 import (
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/config/database"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/venuePermission"
 	"gorm.io/gorm"
 )
+
+// venueAccessLoader 实现 venuePermission.DataLoader 接口
+// 向 venuePermission 模块提供所需的获取权限数据的方法
+type venueAccessLoader struct{}
+
+func (l *venueAccessLoader) GetAllVenueAccessGroupIDs() ([]int, error) {
+	return GetAllVenueAccessGroupIDs()
+}
+
+func (l *venueAccessLoader) GetVenueAccessGroupByID(vagid int) (*models.VenueAccess, error) {
+	return GetVenueAccessGroupByID(vagid)
+}
+
+func NewVenueAccessLoader() venuePermission.DataLoader {
+	return &venueAccessLoader{}
+}
 
 type VenueAccessEntity struct {
 	VAGID         int  `gorm:"column:vagid"`
@@ -142,6 +159,7 @@ func mergeVenueAccessEntities(entities []VenueAccessEntity) []VenueAccessEntity 
 	}
 	return merged
 }
+
 // GetAllVenueAccessGroupIDs 获取所有存在的权限组ID
 func GetAllVenueAccessGroupIDs() ([]int, error) {
 	var vagids []int

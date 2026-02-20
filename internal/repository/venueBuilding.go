@@ -48,6 +48,19 @@ func DeleteVenueBuildingByID(buildingID int) error {
 	return nil
 }
 
+// VenueBuildingExists 检查楼区是否存在
+func VenueBuildingExists(buildingID int) (bool, error) {
+	var count int64
+	txDB := database.DB.
+		Model(&VenueBuildingEntity{}).
+		Where(&VenueBuildingEntity{BuildingID: buildingID}).
+		Count(&count)
+	if txDB.Error != nil {
+		return false, txDB.Error
+	}
+	return count > 0, nil
+}
+
 // Entity-Domain Conversion (Private Methods)
 
 func (b *VenueBuildingEntity) fromDomain(modelB *models.VenueBuilding) {

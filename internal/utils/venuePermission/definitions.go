@@ -1,11 +1,11 @@
 package venuePermission
 
-// VenuePermission 定义场地权限类型
-type VenuePermission string
+// VenuePerm 定义场地权限类型
+type VenuePerm string
 
 const (
-	Reserve   VenuePermission = "reserve"   // 可预约
-	Approval  VenuePermission = "approval"  // 可审批
-	Edit      VenuePermission = "edit"      // 可编辑
-	Manage    VenuePermission = "manage"    // 可管理
+	Reserve  VenuePerm = "reserve"  // 可预约
+	Approval VenuePerm = "approval" // 可审批
+	Edit     VenuePerm = "edit"     // 可编辑
+	Manage   VenuePerm = "manage"   // 可管理
 )

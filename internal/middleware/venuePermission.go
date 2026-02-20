@@ -11,7 +11,7 @@ import (
 // CheckVenuePermission 场地权限检查中间件
 // getVenueID 是一个函数，用于从 gin.Context 中提取 venueID
 // perms 是需要检查的权限列表，只要满足其中一个权限即可通过
-func CheckVenuePermission(venueID int, perms ...venuePermission.VenuePermission) gin.HandlerFunc {
+func CheckVenuePermission(venueID int, perms ...venuePermission.VenuePerm) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 从 Context 中获取 VenueAccessGroupID（由 AuthMiddleware 设置）
 		vagidVal, exists := c.Get("VenueAccessGroupID")

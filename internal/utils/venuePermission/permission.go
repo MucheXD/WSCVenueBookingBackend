@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
-	"github.com/MucheXD/WSCVenueBookingBackend/internal/repository"
 )
 
 // venueAccessCache 存储权限组的内存缓存，key为VAGID，value为VenueAccess指针
@@ -14,13 +13,20 @@ var (
 	cacheLock        sync.RWMutex
 )
 
+// DataLoader 定义数据加载器接口，用于获取权限数据
+type DataLoader interface {
+	GetAllVenueAccessGroupIDs() ([]int, error)
+	GetVenueAccessGroupByID(vagid int) (*models.VenueAccess, error)
+}
+
 // RefreshVenueAccessCache 从数据库加载所有权限数据到内存缓存
-// 这个函数应该在应用启动时调用，也可以在更新权限后调用
-func RefreshVenueAccessCache() error {
+// 这个函数应该在应用启动时和更新权限后调用
+// 由于 util 不应该依赖 repo，因此使用依赖注入的方式获取数据加载器
+func RefreshVenueAccessCache(loader DataLoader) error {
 	slog.Debug("Starting to refresh venue access cache from database")
 
 	// 获取所有权限组ID
-	vagids, err := repository.GetAllVenueAccessGroupIDs()
+	vagids, err := loader.GetAllVenueAccessGroupIDs()
 	if err != nil {
 		slog.Error("Failed to get all venue access group IDs", "error", err)
 		return err
@@ -31,7 +37,7 @@ func RefreshVenueAccessCache() error {
 
 	// 加载每个权限组
 	for _, vagid := range vagids {
-		va, err := repository.GetVenueAccessGroupByID(vagid)
+		va, err := loader.GetVenueAccessGroupByID(vagid)
 		if err != nil {
 			slog.Warn("Failed to load venue access group", "vagid", vagid, "error", err)
 			continue
@@ -61,7 +67,7 @@ func GetVenueAccessByVAGID(vagid int) *models.VenueAccess {
 // 返回值：
 // - true: 用户拥有指定权限
 // - false: 用户不拥有指定权限
-func CheckVenuePermission(vagid int, venueID int, perm VenuePermission) bool {
+func CheckVenuePermission(vagid int, venueID int, perm VenuePerm) bool {
 	va := GetVenueAccessByVAGID(vagid)
 	if va == nil {
 		return false
