@@ -180,66 +180,62 @@ func GetVenueIDsByVAGID(vagid int) ([]int, error) {
 	return venueIDs, nil
 }
 
-// GetBuildingsByCampusesWithVenues 获取包含指定场地的楼区和校区信息
-func GetBuildingsWithCampusesByVenueIDs(venueIDs []int) ([]*models.VenueBuilding, []*models.VenueCampus, error) {
-
-	// SQL设计：使用Preload预加载关联的campus信息，避免N+1查询
-	// SELECT b.*, c.* FROM venue_buildings b
-	// INNER JOIN venue_campuses c ON b.location_campus_id = c.campus_id
-	// WHERE b.building_id IN (SELECT DISTINCT location_building_id FROM venues WHERE venue_id IN (?))
-
-	if len(venueIDs) == 0 {
-		return []*models.VenueBuilding{}, []*models.VenueCampus{}, nil
-	}
-
-	// 获取场地对应的楼区ID
-	var buildingIDs []int
-	if err := database.DB.Model(&VenueEntity{}).
-		Where("venue_id IN ?", venueIDs).
-		Distinct("location_building_id").
-		Pluck("location_building_id", &buildingIDs).Error; err != nil {
-		return nil, nil, err
-	}
-
-	if len(buildingIDs) == 0 {
-		return []*models.VenueBuilding{}, []*models.VenueCampus{}, nil
-	}
-
-	// 获取楼区信息
+// 联表查询权限组可访问的楼区信息
+func GetAccessibleBuildingList(vagid int) ([]*models.VenueBuilding, error) {
 	var buildingEntities []VenueBuildingEntity
-	if err := database.DB.Model(&VenueBuildingEntity{}).
-		Where("building_id IN ?", buildingIDs).
-		Find(&buildingEntities).Error; err != nil {
-		return nil, nil, err
-	}
 
+	// SQL设计：使用JOIN联表查询满足“条件A”的 venue_buildings 条目
+	// INNER JOIN 实现了嵌套查询的效果，使用以下逻辑：
+	// 条件A：该 venue_buildings 条目被满足“条件B”的 venues 条目引用
+	// 条件B：该 venues 条目被满足“条件C”的 venue_accesses 条目引用
+	// 条件C：该 venue_accesses 条目满足 vagid = ? 的条件
+	// 每个条目全部满足条件任意次数后，只返回一次
+
+	err := database.DB.
+		Table("venue_buildings b").
+		Select("DISTINCT b.building_id, b.building_name, b.location_campus_id").
+		Joins("INNER JOIN venues v ON b.building_id = v.location_building_id").
+		Joins("INNER JOIN venue_accesses va ON v.venue_id = va.venue_id").
+		Where("va.vagid = ?", vagid).
+		Scan(&buildingEntities).Error
+	if err != nil {
+		return nil, err
+	}
 	buildings := make([]*models.VenueBuilding, 0, len(buildingEntities))
-	campusIDMap := make(map[int]struct{})
 	for _, entity := range buildingEntities {
 		buildings = append(buildings, entity.toDomain())
-		campusIDMap[entity.CampusID] = struct{}{}
 	}
+	return buildings, nil
+}
 
-	// 获取校区ID列表
-	campusIDs := make([]int, 0, len(campusIDMap))
-	for id := range campusIDMap {
-		campusIDs = append(campusIDs, id)
-	}
-
-	// 获取校区信息
+// 联表查询权限组可访问的校区信息
+func GetAccessibleCampusList(vagid int) ([]*models.VenueCampus, error) {
 	var campusEntities []VenueCampusEntity
-	if err := database.DB.Model(&VenueCampusEntity{}).
-		Where("campus_id IN ?", campusIDs).
-		Find(&campusEntities).Error; err != nil {
-		return nil, nil, err
-	}
 
+	// SQL设计：使用JOIN联表查询满足“条件A”的 venue_campuses 条目
+	// INNER JOIN 实现了嵌套查询的效果，使用以下逻辑：
+	// 条件A：该 venue_campuses 条目被满足“条件B”的 venue_buildings 条目引用
+	// 条件B：该 venue_buildings 条目被满足“条件C”的 venues 条目引用
+	// 条件C：该 venues 条目被满足“条件D”的 venue_accesses 条目引用
+	// 条件D：该 venue_accesses 条目满足 vagid = ? 的条件
+	// 每个条目全部满足条件任意次数后，只返回一次
+
+	err := database.DB.
+		Table("venue_campuses c").
+		Select("DISTINCT c.campus_id, c.campus_name").
+		Joins("INNER JOIN venue_buildings b ON c.campus_id = b.location_campus_id").
+		Joins("INNER JOIN venues v ON b.building_id = v.location_building_id").
+		Joins("INNER JOIN venue_accesses va ON v.venue_id = va.venue_id").
+		Where("va.vagid = ?", vagid).
+		Scan(&campusEntities).Error
+	if err != nil {
+		return nil, err
+	}
 	campuses := make([]*models.VenueCampus, 0, len(campusEntities))
 	for _, entity := range campusEntities {
 		campuses = append(campuses, entity.toDomain())
 	}
-
-	return buildings, campuses, nil
+	return campuses, nil
 }
 
 // GetVenueTimeslotsInRange 获取指定场地的时间段占用情况

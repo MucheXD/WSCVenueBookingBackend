@@ -41,27 +41,8 @@ func GetVenueLocationsHandler(c *gin.Context) {
 		return
 	}
 
-	// TODO: 链路优化，repo 层直接支持联表查询
-	// 此链路调用的两个 ByVenueIDs 方法会产生很大的查询指令，需要优化
-
-	// 调用服务层获取场地ID列表
-	venueIDs, err := venueSvc.GetVenueIDsByVAGID(c.Request.Context(), vagid)
-	if err != nil {
-		apiException.AbortWithException(c, apiException.ServerError, err)
-		return
-	}
-
-	// 如果没有可访问的场地，返回空列表
-	if len(venueIDs) == 0 {
-		utils.SetSuccessJsonResponse(c, LocationInfo{
-			Buildings: []BuildingDTO{},
-			Campuses:  []CampusDTO{},
-		})
-		return
-	}
-
 	// 调用服务层获取楼区和校区信息
-	buildings, campuses, err := venueSvc.GetBuildingsAndCampusesByVenueIDs(c.Request.Context(), venueIDs)
+	buildings, campuses, err := venueSvc.GetAccessibleBuildingsAndCampuses(c.Request.Context(), vagid)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return

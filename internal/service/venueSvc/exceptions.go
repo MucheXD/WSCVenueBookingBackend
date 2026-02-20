@@ -14,4 +14,5 @@ var (
 	ErrAttachmentQueryInDB   = errors.New("数据库查询附件失败")
 	ErrTimeslotQueryInDB     = errors.New("数据库查询时间段失败")
 	ErrBuildingQueryInDB     = errors.New("数据库查询楼区失败")
+	ErrCampusQueryInDB       = errors.New("数据库查询校区失败")
 )

@@ -108,23 +108,16 @@ func ListVenues(ctx context.Context, opts VenueListOptions) ([]*models.Venue, er
 	return venues, nil
 }
 
-// GetVenueIDsByVAGID 获取用户可访问的场地ID列表
-func GetVenueIDsByVAGID(ctx context.Context, vagid int) ([]int, error) {
-	venueIDs, err := repository.GetVenueIDsByVAGID(vagid)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrVenueQueryInDB, err)
-	}
-	return venueIDs, nil
-}
-
-// GetBuildingsAndCampusesByVenueIDs 根据场地ID列表获取楼区和校区信息
-func GetBuildingsAndCampusesByVenueIDs(ctx context.Context, venueIDs []int) ([]*models.VenueBuilding, []*models.VenueCampus, error) {
-
-	buildings, campuses, err := repository.GetBuildingsWithCampusesByVenueIDs(venueIDs)
+// GetAccessibleBuildingsAndCampuses 根据权限组获取可访问的楼区和校区信息
+func GetAccessibleBuildingsAndCampuses(ctx context.Context, vagid int) ([]*models.VenueBuilding, []*models.VenueCampus, error) {
+	buildings, err := repository.GetAccessibleBuildingList(vagid)
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %w", ErrBuildingQueryInDB, err)
 	}
-
+	campuses, err := repository.GetAccessibleCampusList(vagid)
+	if err != nil {
+		return nil, nil, fmt.Errorf("%w: %w", ErrCampusQueryInDB, err)
+	}
 	return buildings, campuses, nil
 }
 
