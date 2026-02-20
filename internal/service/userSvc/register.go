@@ -9,7 +9,7 @@ import (
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/repository"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils"
-	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/permission"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/systemPermission"
 )
 
 func RegisterUser(ctx context.Context, user *models.User) (*models.User, error) {
@@ -24,8 +24,8 @@ func RegisterUser(ctx context.Context, user *models.User) (*models.User, error) 
 	// 创建用户
 	user.UID = generateNewUserID()
 	user.RegisterTime = time.Now().UTC()
-	user.PhoneNumber=""
-	user.PermMap = permission.RegisterDefault
+	user.PhoneNumber = ""
+	user.PermMap = systemPermission.Map(systemPermission.RegisterDefault)
 	user.PermVAGID = 0
 	err = repository.CreateNewUser(user)
 	if err != nil {
