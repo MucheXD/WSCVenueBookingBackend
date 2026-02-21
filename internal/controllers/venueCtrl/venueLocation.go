@@ -1,4 +1,4 @@
-package controllers
+package venueCtrl
 
 import (
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/service/venueSvc"

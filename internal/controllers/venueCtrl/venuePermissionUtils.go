@@ -1,4 +1,4 @@
-package controllers
+package venueCtrl
 
 import (
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/systemPermission"
