@@ -8,6 +8,7 @@ CREATE TABLE users (
     username VARCHAR(255) COMMENT 'Username',
     school_id VARCHAR(255) COMMENT 'School ID, student/staff number',
     real_name VARCHAR(255) COMMENT 'Real Name',
+    phone_number VARCHAR(32) COMMENT 'Phone Number',
     perm_map BIGINT COMMENT 'Permission Map',
     perm_vagid int COMMENT 'Venue Access Group ID',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Record Creation Time',

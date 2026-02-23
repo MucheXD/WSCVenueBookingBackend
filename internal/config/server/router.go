@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/controllers/applicationCtrl"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/controllers/userCtrl"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/controllers/venueCtrl"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/middlewares"
@@ -48,4 +49,21 @@ func initRouter() {
 	GinEngine.GET("/api/venue/locations",
 		middlewares.AuthMiddleware(),
 		venueCtrl.GetVenueLocationsHandler)
+
+	// 申请单相关路由
+	GinEngine.POST("/api/venue/:venue_id/application",
+		middlewares.AuthMiddleware(),
+		applicationCtrl.CreateApplicationHandler)
+	GinEngine.DELETE("/api/application/:application_id",
+		middlewares.AuthMiddleware(),
+		applicationCtrl.DeleteApplicationHandler)
+	GinEngine.GET("/api/venue/:venue_id/application",
+		middlewares.AuthMiddleware(),
+		applicationCtrl.ListVenueApplicationsHandler)
+	GinEngine.GET("/api/user/application",
+		middlewares.AuthMiddleware(),
+		applicationCtrl.ListMyApplicationsHandler)
+	GinEngine.PUT("/api/application/:application_id",
+		middlewares.AuthMiddleware(),
+		applicationCtrl.ReviewApplicationHandler)
 }

@@ -80,7 +80,6 @@ type VenueTimeslot struct {
 	StartTime     time.Time
 	EndTime       time.Time
 	ApplicationID int
-	Status        string
 }
 
 type VenueTimetable struct {

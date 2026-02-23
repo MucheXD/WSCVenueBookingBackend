@@ -37,7 +37,6 @@ type AttachmentDTO struct {
 type TimeslotDTO struct {
 	Start  string `json:"start"`
 	End    string `json:"end"`
-	Status string `json:"status"`
 }
 
 // ListVenuesHandler 列出场地
@@ -126,9 +125,8 @@ func ListVenuesHandler(c *gin.Context) {
 					endTimeStr = ts.EndTime.Format(time.RFC3339)
 				}
 				dto.Timetable = append(dto.Timetable, TimeslotDTO{
-					Start:  ts.StartTime.Format(time.RFC3339),
-					End:    endTimeStr,
-					Status: ts.Status,
+					Start: ts.StartTime.Format(time.RFC3339),
+					End:   endTimeStr,
 				})
 			}
 		}
