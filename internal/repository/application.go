@@ -73,14 +73,11 @@ func CreateApplicationWithTx(tx *gorm.DB, application *models.Application) (int,
 	if len(application.TimeRequest) > 0 {
 		timeslotEntities := make([]ApplicationTimeslotEntity, 0, len(application.TimeRequest))
 		for _, slot := range application.TimeRequest {
-			begin := slot.Begin
-			end := slot.End
-			appID := entity.ID
 			timeslotEntities = append(timeslotEntities, ApplicationTimeslotEntity{
 				VenueID:       application.VenueID,
-				StartTime:     begin,
-				EndTime:       &end,
-				ApplicationID: &appID,
+				StartTime:     slot.Begin,
+				EndTime:       &slot.End,
+				ApplicationID: &entity.ID,
 			})
 		}
 		if err := tx.Create(&timeslotEntities).Error; err != nil {
@@ -118,7 +115,7 @@ func CreateApplicationCommentWithTx(tx *gorm.DB, comment *models.ApplicationComm
 }
 
 func GetApplicationByID(applicationID int) (*models.Application, error) {
-	applications, err := buildApplications(database.DB.Where("id = ?", applicationID))
+	applications, err := queryApplications(database.DB.Where("id = ?", applicationID))
 	if err != nil {
 		return nil, err
 	}
@@ -129,43 +126,48 @@ func GetApplicationByID(applicationID int) (*models.Application, error) {
 }
 
 func ListApplicationsByVenueID(venueID int) ([]models.Application, error) {
-	return buildApplications(database.DB.Where("venue_id = ?", venueID))
+	return queryApplications(database.DB.Where("venue_id = ?", venueID))
 }
 
 func ListApplicationsByApplicantUID(applicantUID string) ([]models.Application, error) {
-	return buildApplications(database.DB.Where("applicant_uid = ?", applicantUID))
+	return queryApplications(database.DB.Where("applicant_uid = ?", applicantUID))
 }
 
+// 软删除申请单及其关联的时间段、评论、附件等数据
 func SoftDeleteApplicationCascadeWithTx(tx *gorm.DB, applicationID int) error {
+	// 删除申请单关联时间段
 	if err := tx.Model(&ApplicationTimeslotEntity{}).
 		Where("application_id = ?", applicationID).
 		Delete(&ApplicationTimeslotEntity{}).Error; err != nil {
 		return err
 	}
+	// 删除申请单附件
+	if err := SoftDeleteAttachmentsByBizWithTx(tx, AttachmentBizTypeApplication, applicationID); err != nil {
+		return err
+	}
 
+	// 删除关联评论及评论附件
 	var comments []ApplicationCommentEntity
+	// 列出评论
 	if err := tx.Model(&ApplicationCommentEntity{}).
 		Where("application_id = ?", applicationID).
 		Find(&comments).Error; err != nil {
 		return err
 	}
-
-	for _, comment := range comments {
+	// 删除评论附件
+	for _, comment := range comments { // cmt: 使用批量删除，见该方法下的评论。
 		if err := SoftDeleteAttachmentsByBizWithTx(tx, AttachmentBizTypeApplicationComment, comment.ID); err != nil {
 			return err
 		}
 	}
-
+	// 删除评论主体
 	if err := tx.Model(&ApplicationCommentEntity{}).
 		Where("application_id = ?", applicationID).
 		Delete(&ApplicationCommentEntity{}).Error; err != nil {
 		return err
 	}
 
-	if err := SoftDeleteAttachmentsByBizWithTx(tx, AttachmentBizTypeApplication, applicationID); err != nil {
-		return err
-	}
-
+	// 删除申请单主体
 	return tx.Model(&ApplicationEntity{}).
 		Where("id = ?", applicationID).
 		Delete(&ApplicationEntity{}).Error
@@ -177,6 +179,7 @@ func UpdateApplicationStatusWithTx(tx *gorm.DB, applicationID int, status string
 		Update("application_status", status).Error
 }
 
+// 批量拒绝申请单，用于冲突处理
 func BatchRejectApplicationsWithTx(tx *gorm.DB, applicationIDs []int) error {
 	if len(applicationIDs) == 0 {
 		return nil
@@ -187,6 +190,8 @@ func BatchRejectApplicationsWithTx(tx *gorm.DB, applicationIDs []int) error {
 		Update("application_status", models.ApplicationStatusRejected).Error
 }
 
+// 获取冲突的申请单ID，使用高级数据库查询完成
+// candidateStatuses 为从申请单状态过滤器，例如：仅将“req”状态的从申请单定义为冲突
 func GetConflictingApplicationIDs(applicationID int, candidateStatuses []string) ([]int, error) {
 	if len(candidateStatuses) == 0 {
 		return []int{}, nil
@@ -194,21 +199,21 @@ func GetConflictingApplicationIDs(applicationID int, candidateStatuses []string)
 
 	var conflictIDs []int
 	err := database.DB.
-		Table("applications a1").
-		Distinct("a2.id").
-		Joins("JOIN venue_timeslots t1 ON t1.application_id = a1.id").
-		Joins("JOIN venue_timeslots t2 ON t2.venue_id = a1.venue_id").
-		Joins("JOIN applications a2 ON a2.id = t2.application_id").
-		Where("a1.id = ?", applicationID).
-		Where("a1.deleted_at IS NULL").
-		Where("a2.deleted_at IS NULL").
-		Where("t1.deleted_at IS NULL").
-		Where("t2.deleted_at IS NULL").
-		Where("a2.id <> a1.id").
-		Where("a2.application_status IN ?", candidateStatuses).
-		Where("t1.start_time < COALESCE(t2.end_time, '9999-12-31 23:59:59')").
-		Where("COALESCE(t1.end_time, '9999-12-31 23:59:59') > t2.start_time").
-		Pluck("a2.id", &conflictIDs).Error
+		Table("applications a1").                                              // 操作表：applications 定义 a1 为主申请单
+		Where("a1.id = ?", applicationID).                                     // 筛选：主申请单ID对应传入ID
+		Distinct("a2.id").                                                     // 置唯一：相同从申请单以ID为依据仅输出一次
+		Joins("JOIN venue_timeslots t1 ON t1.application_id = a1.id").         // 提取：t1 为主申请单时间段
+		Joins("JOIN venue_timeslots t2 ON t2.venue_id = a1.venue_id").         // 提取：t2 为与主申请单申请场地相同的时间段
+		Joins("JOIN applications a2 ON a2.id = t2.application_id").            // 提取：a2 为 t2 关连的申请单(即从申请单)
+		Where("a2.id <> a1.id").                                               // 排除：从申请单不包括主申请单
+		Where("a1.deleted_at IS NULL").                                        // 复杂查询需手动排除软删除
+		Where("a2.deleted_at IS NULL").                                        // 复杂查询需手动排除软删除
+		Where("t1.deleted_at IS NULL").                                        // 复杂查询需手动排除软删除
+		Where("t2.deleted_at IS NULL").                                        // 复杂查询需手动排除软删除
+		Where("a2.application_status IN ?", candidateStatuses).                // 筛选：具有目标状态的从申请单
+		Where("t1.start_time < COALESCE(t2.end_time, '9999-12-31 23:59:59')"). // 筛选：时间区段左重叠判断，为可能空的 end_time 定义默认值
+		Where("COALESCE(t1.end_time, '9999-12-31 23:59:59') > t2.start_time"). // 筛选：时间区段右重叠判断，为可能空的 end_time 定义默认值
+		Pluck("a2.id", &conflictIDs).Error                                     // 输出：符合上述条件从申请单ID
 	if err != nil {
 		return nil, err
 	}
@@ -216,8 +221,12 @@ func GetConflictingApplicationIDs(applicationID int, candidateStatuses []string)
 	return conflictIDs, nil
 }
 
-func buildApplications(scope *gorm.DB) ([]models.Application, error) {
+// 以传入 scope 的条件查询所有申请单，同步查询时间表、评论表、附件表，并进行组装
+// 附加条件时请传入对应条件的 scope
+func queryApplications(scope *gorm.DB) ([]models.Application, error) {
 	var appEntities []ApplicationEntity
+
+	// 查询申请单主体
 	if err := scope.
 		Model(&ApplicationEntity{}).
 		Order("id DESC").
@@ -228,11 +237,13 @@ func buildApplications(scope *gorm.DB) ([]models.Application, error) {
 		return []models.Application{}, nil
 	}
 
+	// 获取所有申请单ID以便后续查询关联数据
 	appIDs := make([]int, 0, len(appEntities))
 	for _, app := range appEntities {
 		appIDs = append(appIDs, app.ID)
 	}
 
+	// 批量查询申请单对应时间表
 	var timeslotEntities []ApplicationTimeslotEntity
 	if err := database.DB.
 		Model(&ApplicationTimeslotEntity{}).
@@ -243,6 +254,7 @@ func buildApplications(scope *gorm.DB) ([]models.Application, error) {
 	}
 	timeslotMap := make(map[int][]models.ApplicationTimeRequest)
 	for _, timeslot := range timeslotEntities {
+		// ENH: 此处过滤了未确定结束的时间段，后续可考虑增加特殊处理逻辑以供前端特殊显示
 		if timeslot.ApplicationID == nil || timeslot.EndTime == nil {
 			continue
 		}
@@ -253,6 +265,7 @@ func buildApplications(scope *gorm.DB) ([]models.Application, error) {
 		})
 	}
 
+	// 批量查询申请单对应附件
 	var appAttachmentEntities []AttachmentEntity
 	if err := database.DB.
 		Model(&AttachmentEntity{}).
@@ -267,6 +280,7 @@ func buildApplications(scope *gorm.DB) ([]models.Application, error) {
 		appAttachmentMap[attachment.BizID] = append(appAttachmentMap[attachment.BizID], attachment.toDomain())
 	}
 
+	// 批量查询申请单对应评论
 	var commentEntities []ApplicationCommentEntity
 	if err := database.DB.
 		Model(&ApplicationCommentEntity{}).
@@ -275,12 +289,10 @@ func buildApplications(scope *gorm.DB) ([]models.Application, error) {
 		Find(&commentEntities).Error; err != nil {
 		return nil, err
 	}
-
 	commentIDs := make([]int, 0, len(commentEntities))
-	for _, comment := range commentEntities {
+	for _, comment := range commentEntities { // 获取评论ID以便后续查询评论附件
 		commentIDs = append(commentIDs, comment.ID)
 	}
-
 	commentAttachmentMap := make(map[int][]models.Attachment)
 	if len(commentIDs) > 0 {
 		var commentAttachmentEntities []AttachmentEntity
@@ -296,9 +308,8 @@ func buildApplications(scope *gorm.DB) ([]models.Application, error) {
 			commentAttachmentMap[attachment.BizID] = append(commentAttachmentMap[attachment.BizID], attachment.toDomain())
 		}
 	}
-
 	commentsByApplication := make(map[int][]models.ApplicationComment)
-	for _, comment := range commentEntities {
+	for _, comment := range commentEntities { // 组装评论和评论附件为模型
 		commentsByApplication[comment.ApplicationID] = append(commentsByApplication[comment.ApplicationID], models.ApplicationComment{
 			ID:             comment.ID,
 			ApplicationID:  comment.ApplicationID,
@@ -310,6 +321,7 @@ func buildApplications(scope *gorm.DB) ([]models.Application, error) {
 		})
 	}
 
+	// 最终组装申请单模型
 	applications := make([]models.Application, 0, len(appEntities))
 	for _, entity := range appEntities {
 		applicationType := models.ApplicationTypeNormal

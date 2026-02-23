@@ -18,6 +18,7 @@ type ApprovalResult struct {
 	NewConflicts []string
 }
 
+// cmt: 权限校验请迁移至 Controller 层，Service 层仅负责业务逻辑处理，权限字段不进入 Service 层函数参数列表
 func CreateApplication(ctx context.Context, venueID int, applicantUID string, vagid int, sysPermMap uint64, application models.Application) (int, error) {
 	if !canReserve(venueID, vagid, sysPermMap) {
 		return 0, ErrApplicationPermissionDenied
@@ -51,6 +52,7 @@ func CreateApplication(ctx context.Context, venueID int, applicantUID string, va
 	return createdID, nil
 }
 
+// cmt: 权限校验请迁移至 Controller 层，Service 层仅负责业务逻辑处理，权限字段不进入 Service 层函数参数列表
 func DeleteApplication(ctx context.Context, applicationID int, requesterUID string, vagid int, sysPermMap uint64) error {
 	application, err := repository.GetApplicationByID(applicationID)
 	if err != nil {
@@ -76,6 +78,7 @@ func DeleteApplication(ctx context.Context, applicationID int, requesterUID stri
 	return nil
 }
 
+// cmt: 权限校验请迁移至 Controller 层，Service 层仅负责业务逻辑处理，权限字段不进入 Service 层函数参数列表
 func ListVenueApplications(ctx context.Context, venueID int, vagid int, sysPermMap uint64) ([]models.Application, error) {
 	if !canReserve(venueID, vagid, sysPermMap) {
 		return nil, ErrApplicationPermissionDenied
@@ -95,6 +98,7 @@ func ListUserApplications(ctx context.Context, applicantUID string) ([]models.Ap
 	return applications, nil
 }
 
+// cmt: 权限校验请迁移至 Controller 层，Service 层仅负责业务逻辑处理，权限字段不进入 Service 层函数参数列表
 func ReviewApplication(ctx context.Context, approval models.ApplicationApproval, reviewerUID string, vagid int, sysPermMap uint64) (ApprovalResult, error) {
 	if approval.Decision != models.ApprovalDecisionApproved && approval.Decision != models.ApprovalDecisionRejected {
 		return ApprovalResult{}, ErrApplicationDecisionInvalid

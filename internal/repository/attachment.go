@@ -66,6 +66,7 @@ func CreateAttachmentWithTx(tx *gorm.DB, modelA *models.Attachment, bizType, biz
 	return nil
 }
 
+// cmt: 修改为批量处理避免重复数据库调用。即将bizID字段更改为 []int 同时修改所有调用方。
 func SoftDeleteAttachmentsByBizWithTx(tx *gorm.DB, bizType, bizID int) error {
 	var attachments []AttachmentEntity
 	if err := tx.
