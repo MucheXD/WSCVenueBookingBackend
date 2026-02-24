@@ -4,11 +4,14 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/config/database"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/repository"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/service/venueSvc"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/apiException"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // UpdateVenueForm 更新场地表单（所有字段可选）
@@ -72,7 +75,32 @@ func UpdateVenueHandler(c *gin.Context) {
 		return
 	}
 
-	// TODO: 处理附件图片（images_token）的更新
+	// 处理图片附件更新
+	if req.ImagesToken != nil {
+		err = database.DB.Transaction(func(tx *gorm.DB) error {
+
+			// 移除旧图片附件
+			if err := repository.SoftDeleteBizAttachmentsTx(tx, repository.AttachmentBizTypeVenue, []int{venueID}); err != nil {
+				return err
+			}
+
+			// 创建新图片附件条目
+			attachments := make([]models.Attachment, 0, len(req.ImagesToken))
+			for idx, fileToken := range req.ImagesToken {
+				attachments = append(attachments, models.Attachment{
+					Index:       idx,
+					FileToken:   fileToken,
+					BizFileType: "image",
+				})
+			}
+
+			return repository.CreateAttachmentsTx(tx, repository.AttachmentBizTypeVenue, venueID, attachments)
+		})
+		if err != nil {
+			apiException.AbortWithException(c, apiException.ServerError, err)
+			return
+		}
+	}
 
 	utils.SetSuccessJsonResponse(c, map[string]string{"status": "updated"})
 }

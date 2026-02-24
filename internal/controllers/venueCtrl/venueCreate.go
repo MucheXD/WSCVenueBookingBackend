@@ -3,7 +3,9 @@ package venueCtrl
 import (
 	"errors"
 
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/config/database"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/repository"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/service/venueSvc"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/apiException"
@@ -53,8 +55,21 @@ func CreateVenueHandler(c *gin.Context) {
 		return
 	}
 
-	// TODO: 处理附件图片（images_token）
-	// 这里可以调用 repository.CreateAttachment 来创建附件记录
+	if len(req.ImagesToken) > 0 {
+		attachments := make([]models.Attachment, 0, len(req.ImagesToken))
+		for idx, fileToken := range req.ImagesToken {
+			attachments = append(attachments, models.Attachment{
+				Index:       idx,
+				FileToken:   fileToken,
+				BizFileType: "image",
+			})
+		}
+
+		if err := repository.CreateAttachmentsTx(database.DB, repository.AttachmentBizTypeVenue, venueID, attachments); err != nil {
+			apiException.AbortWithException(c, apiException.ServerError, err)
+			return
+		}
+	}
 
 	utils.SetSuccessJsonResponse(c, map[string]int{"venue_id": venueID})
 }
