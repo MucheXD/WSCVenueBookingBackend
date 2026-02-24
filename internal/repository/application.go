@@ -54,7 +54,7 @@ func (ApplicationTimeslotEntity) TableName() string {
 	return "venue_timeslots"
 }
 
-func CreateApplicationWithTx(tx *gorm.DB, application *models.Application) (int, error) {
+func CreateApplicationTx(tx *gorm.DB, application *models.Application) (int, error) {
 	entity := ApplicationEntity{
 		VenueID:               application.VenueID,
 		ApplicantUID:          application.ApplicantUID,
@@ -91,7 +91,7 @@ func CreateApplicationWithTx(tx *gorm.DB, application *models.Application) (int,
 			attachment.Index = idx
 			attachments = append(attachments, attachment)
 		}
-		if err := CreateAttachmentsWithTx(tx, AttachmentBizTypeApplication, entity.ID, attachments); err != nil {
+		if err := CreateAttachmentsTx(tx, AttachmentBizTypeApplication, entity.ID, attachments); err != nil {
 			return 0, err
 		}
 	}
@@ -99,7 +99,7 @@ func CreateApplicationWithTx(tx *gorm.DB, application *models.Application) (int,
 	return entity.ID, nil
 }
 
-func CreateApplicationCommentWithTx(tx *gorm.DB, comment *models.ApplicationComment) (int, error) {
+func CreateApplicationCommentTx(tx *gorm.DB, comment *models.ApplicationComment) (int, error) {
 	entity := ApplicationCommentEntity{
 		ApplicationID:  comment.ApplicationID,
 		CommenterUID:   comment.CommenterUID,
@@ -115,7 +115,7 @@ func CreateApplicationCommentWithTx(tx *gorm.DB, comment *models.ApplicationComm
 			attachment.Index = idx
 			attachments = append(attachments, attachment)
 		}
-		if err := CreateAttachmentsWithTx(tx, AttachmentBizTypeApplicationComment, entity.ID, attachments); err != nil {
+		if err := CreateAttachmentsTx(tx, AttachmentBizTypeApplicationComment, entity.ID, attachments); err != nil {
 			return 0, err
 		}
 	}
@@ -142,7 +142,7 @@ func ListApplicationsByApplicantUID(applicantUID string) ([]models.Application, 
 }
 
 // 软删除申请单及其关联的时间段、评论、附件等数据
-func SoftDeleteApplicationCascadeWithTx(tx *gorm.DB, applicationID int) error {
+func SoftDeleteApplicationsTx(tx *gorm.DB, applicationID int) error {
 	// 删除申请单关联时间段
 	if err := tx.Model(&ApplicationTimeslotEntity{}).
 		Where(&ApplicationTimeslotEntity{ApplicationID: &applicationID}).
@@ -150,7 +150,7 @@ func SoftDeleteApplicationCascadeWithTx(tx *gorm.DB, applicationID int) error {
 		return err
 	}
 	// 删除申请单附件
-	if err := SoftDeleteAttachmentsByBizWithTx(tx, AttachmentBizTypeApplication, []int{applicationID}); err != nil {
+	if err := SoftDeleteBizAttachmentsTx(tx, AttachmentBizTypeApplication, []int{applicationID}); err != nil {
 		return err
 	}
 
@@ -168,7 +168,7 @@ func SoftDeleteApplicationCascadeWithTx(tx *gorm.DB, applicationID int) error {
 		commentIDs = append(commentIDs, comment.ID)
 	}
 
-	if err := SoftDeleteAttachmentsByBizWithTx(tx, AttachmentBizTypeApplicationComment, commentIDs); err != nil {
+	if err := SoftDeleteBizAttachmentsTx(tx, AttachmentBizTypeApplicationComment, commentIDs); err != nil {
 		return err
 	}
 	// 删除评论主体
@@ -184,21 +184,26 @@ func SoftDeleteApplicationCascadeWithTx(tx *gorm.DB, applicationID int) error {
 		Delete(&ApplicationEntity{}).Error
 }
 
-func UpdateApplicationStatusWithTx(tx *gorm.DB, applicationID int, status string) error {
-	return tx.Model(&ApplicationEntity{}).
-		Where(&ApplicationEntity{ID: applicationID}).
-		Update("application_status", status).Error
+func UpdateApplicationStatusTx(tx *gorm.DB, applicationID int, status string) error {
+	return UpdateApplicationStatusesTx(tx, []int{applicationID}, status)
 }
 
-// 批量拒绝申请单，用于冲突处理
-func BatchRejectApplicationsWithTx(tx *gorm.DB, applicationIDs []int) error {
+// UpdateApplicationStatusesTx 批量更新申请单状态
+// currentStatuses 可选：用于限制仅更新当前状态在该集合内的记录
+func UpdateApplicationStatusesTx(tx *gorm.DB, applicationIDs []int, status string, currentStatuses ...string) error {
 	if len(applicationIDs) == 0 {
 		return nil
 	}
-	return tx.Model(&ApplicationEntity{}).
+	query := tx.Model(&ApplicationEntity{}).
 		Where("id IN ?", applicationIDs).
-		Where("application_status = ?", models.ApplicationStatusRequested).
-		Update("application_status", models.ApplicationStatusRejected).Error
+		Update("application_status", status)
+	if len(currentStatuses) > 0 {
+		query = tx.Model(&ApplicationEntity{}).
+			Where("id IN ?", applicationIDs).
+			Where("application_status IN ?", currentStatuses).
+			Update("application_status", status)
+	}
+	return query.Error
 }
 
 // 获取冲突的申请单ID，使用高级数据库查询完成

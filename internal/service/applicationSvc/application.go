@@ -33,7 +33,7 @@ func CreateApplication(ctx context.Context, venueID int, applicantUID string, ap
 
 	var createdID int
 	err := database.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		id, err := repository.CreateApplicationWithTx(tx, &application)
+		id, err := repository.CreateApplicationTx(tx, &application)
 		if err != nil {
 			return err
 		}
@@ -55,7 +55,7 @@ func DeleteApplication(ctx context.Context, applicationID int) error {
 	}
 
 	err := database.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := repository.SoftDeleteApplicationCascadeWithTx(tx, applicationID); err != nil {
+		if err := repository.SoftDeleteApplicationsTx(tx, applicationID); err != nil {
 			return err
 		}
 		return nil
@@ -64,6 +64,18 @@ func DeleteApplication(ctx context.Context, applicationID int) error {
 		return fmt.Errorf("%w: %w", ErrApplicationDeleteInDB, err)
 	}
 	return nil
+}
+
+func GetApplicationByID(ctx context.Context, applicationID int) (*models.Application, error) {
+	_ = ctx
+	application, err := repository.GetApplicationByID(applicationID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, ErrApplicationNotFound
+		}
+		return nil, fmt.Errorf("%w: %w", ErrApplicationQueryInDB, err)
+	}
+	return application, nil
 }
 
 func ListVenueApplications(ctx context.Context, venueID int) ([]models.Application, error) {
@@ -106,11 +118,11 @@ func ReviewApplication(ctx context.Context, approval models.ApplicationApproval,
 
 	if approval.Decision == models.ApprovalDecisionRejected {
 		err = database.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-			if err := repository.UpdateApplicationStatusWithTx(tx, approval.ApplicationID, models.ApplicationStatusRejected); err != nil {
+			if err := repository.UpdateApplicationStatusTx(tx, approval.ApplicationID, models.ApplicationStatusRejected); err != nil {
 				return err
 			}
 			if comment != nil {
-				if _, err := repository.CreateApplicationCommentWithTx(tx, comment); err != nil {
+				if _, err := repository.CreateApplicationCommentTx(tx, comment); err != nil {
 					return err
 				}
 			}
@@ -129,29 +141,41 @@ func ReviewApplication(ctx context.Context, approval models.ApplicationApproval,
 		return ApprovalResult{}, fmt.Errorf("%w: %w", ErrApplicationQueryInDB, err)
 	}
 
+	// 对冲突ID列表进行预处理（去重与排序），因为 equalIntSlice 是单对单检查
+	conflictIDs = normalizeConflictIDs(conflictIDs)
 	known := normalizeConflictIDs(approval.KnownConflicts)
+
 	if !equalIntSlice(conflictIDs, known) {
 		newConflicts := make([]string, 0, len(conflictIDs))
 		for _, conflictID := range conflictIDs {
 			newConflicts = append(newConflicts, strconv.Itoa(conflictID))
 		}
+		// 若冲突列表与已知冲突列表不一致，则返回新冲突列表，前端可据此提示用户确认是否继续审批
 		return ApprovalResult{NewConflicts: newConflicts}, nil
 	}
 
-	err = database.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := repository.UpdateApplicationStatusWithTx(tx, approval.ApplicationID, models.ApplicationStatusApproved); err != nil {
-			return err
-		}
-		if err := repository.BatchRejectApplicationsWithTx(tx, conflictIDs); err != nil {
-			return err
-		}
-		if comment != nil {
-			if _, err := repository.CreateApplicationCommentWithTx(tx, comment); err != nil {
+	// 开始数据库事务更新：更改申请单状态、自动拒绝冲突的申请单、记录审批意见
+	err = database.DB.WithContext(ctx).Transaction(
+		func(tx *gorm.DB) error {
+			if err := repository.UpdateApplicationStatusTx(tx, approval.ApplicationID, models.ApplicationStatusApproved); err != nil {
 				return err
 			}
-		}
-		return nil
-	})
+			if err := repository.UpdateApplicationStatusesTx(
+				tx,
+				conflictIDs,
+				models.ApplicationStatusRejected,
+				models.ApplicationStatusRequested,
+			); err != nil {
+				return err
+			}
+			if comment != nil {
+				if _, err := repository.CreateApplicationCommentTx(tx, comment); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+
 	if err != nil {
 		return ApprovalResult{}, fmt.Errorf("%w: %w", ErrApplicationUpdateInDB, err)
 	}
@@ -164,18 +188,7 @@ func ReviewApplication(ctx context.Context, approval models.ApplicationApproval,
 	return ApprovalResult{}, nil
 }
 
-func GetApplicationByID(ctx context.Context, applicationID int) (*models.Application, error) {
-	_ = ctx
-	application, err := repository.GetApplicationByID(applicationID)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, ErrApplicationNotFound
-		}
-		return nil, fmt.Errorf("%w: %w", ErrApplicationQueryInDB, err)
-	}
-	return application, nil
-}
-
+// 对输入的原始冲突ID列表进行“去重”和“排序”处理
 func normalizeConflictIDs(values []int) []int {
 	if len(values) == 0 {
 		return []int{}
@@ -205,6 +218,7 @@ func equalIntSlice(a []int, b []int) bool {
 	return true
 }
 
+// 预留函数，等待“站内信”功能实现
 func notifyApplicationDecision(applicantUID string, applicationID int, status string) {
 	_ = applicantUID
 	_ = applicationID

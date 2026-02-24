@@ -48,10 +48,10 @@ func (FileObjectEntity) TableName() string {
 // }
 
 func FileObjectLinked(fileToken string) error {
-	return FileObjectLinkedWithTx(database.DB, fileToken)
+	return FileObjectLinkedTx(database.DB, fileToken)
 }
 
-func FileObjectLinkedWithTx(tx *gorm.DB, fileToken string) error {
+func FileObjectLinkedTx(tx *gorm.DB, fileToken string) error {
 	if fileToken == "" {
 		return nil
 	}
@@ -64,7 +64,7 @@ func FileObjectLinkedWithTx(tx *gorm.DB, fileToken string) error {
 
 // 文件对象批量建引用
 // 若 fileTokens 在列表重复出现，会累加计数
-func FileObjectLinkedBatchWithTx(tx *gorm.DB, fileTokens []string) error {
+func FileObjectLinkedBatchTx(tx *gorm.DB, fileTokens []string) error {
 	cases, args, ok := buildFileTokenCaseArgs(fileTokens)
 	if !ok {
 		return nil
@@ -79,12 +79,12 @@ func FileObjectLinkedBatchWithTx(tx *gorm.DB, fileTokens []string) error {
 }
 
 func FileObjectUnlinked(fileToken string) error {
-	return FileObjectUnlinkedBatchWithTx(database.DB, []string{fileToken})
+	return FileObjectUnlinkedBatchTx(database.DB, []string{fileToken})
 }
 
 // 文件对象批量解引用
 // 若 fileTokens 在列表重复出现，会累加计数
-func FileObjectUnlinkedBatchWithTx(tx *gorm.DB, fileTokens []string) error {
+func FileObjectUnlinkedBatchTx(tx *gorm.DB, fileTokens []string) error {
 	cases, args, ok := buildFileTokenCaseArgs(fileTokens)
 	if !ok {
 		return nil

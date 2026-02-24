@@ -47,15 +47,15 @@ func GetAttachmentsByBiz(bizType, bizID int) ([]models.Attachment, error) {
 }
 
 func CreateAttachment(modelA *models.Attachment, bizType, bizID, bizIndex int) error {
-	return CreateAttachmentWithTx(database.DB, modelA, bizType, bizID, bizIndex)
+	return CreateAttachmentTx(database.DB, modelA, bizType, bizID, bizIndex)
 }
 
-func CreateAttachmentWithTx(tx *gorm.DB, modelA *models.Attachment, bizType, bizID, bizIndex int) error {
+func CreateAttachmentTx(tx *gorm.DB, modelA *models.Attachment, bizType, bizID, bizIndex int) error {
 	modelA.Index = bizIndex
-	return CreateAttachmentsWithTx(tx, bizType, bizID, []models.Attachment{*modelA})
+	return CreateAttachmentsTx(tx, bizType, bizID, []models.Attachment{*modelA})
 }
 
-func CreateAttachmentsWithTx(tx *gorm.DB, bizType, bizID int, attachments []models.Attachment) error {
+func CreateAttachmentsTx(tx *gorm.DB, bizType, bizID int, attachments []models.Attachment) error {
 	if len(attachments) == 0 {
 		return nil
 	}
@@ -82,10 +82,10 @@ func CreateAttachmentsWithTx(tx *gorm.DB, bizType, bizID int, attachments []mode
 		return err
 	}
 
-	return FileObjectLinkedBatchWithTx(tx, fileTokens)
+	return FileObjectLinkedBatchTx(tx, fileTokens)
 }
 
-func SoftDeleteAttachmentsByBizWithTx(tx *gorm.DB, bizType int, bizIDs []int) error {
+func SoftDeleteBizAttachmentsTx(tx *gorm.DB, bizType int, bizIDs []int) error {
 	if len(bizIDs) == 0 {
 		return nil
 	}
@@ -104,7 +104,7 @@ func SoftDeleteAttachmentsByBizWithTx(tx *gorm.DB, bizType int, bizIDs []int) er
 	for _, attachment := range attachments {
 		fileTokens = append(fileTokens, attachment.FileToken)
 	}
-	if err := FileObjectUnlinkedBatchWithTx(tx, fileTokens); err != nil {
+	if err := FileObjectUnlinkedBatchTx(tx, fileTokens); err != nil {
 		return err
 	}
 
