@@ -9,8 +9,6 @@ import (
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/config/database"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/repository"
-	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/systemPermission"
-	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/venuePermission"
 	"gorm.io/gorm"
 )
 
@@ -18,11 +16,8 @@ type ApprovalResult struct {
 	NewConflicts []string
 }
 
-// cmt: 权限校验请迁移至 Controller 层，Service 层仅负责业务逻辑处理，权限字段不进入 Service 层函数参数列表
-func CreateApplication(ctx context.Context, venueID int, applicantUID string, vagid int, sysPermMap uint64, application models.Application) (int, error) {
-	if !canReserve(venueID, vagid, sysPermMap) {
-		return 0, ErrApplicationPermissionDenied
-	}
+// cmt: 已迁移权限校验至 Controller 层，Service 入参移除了权限字段，仅处理申请业务与事务。
+func CreateApplication(ctx context.Context, venueID int, applicantUID string, application models.Application) (int, error) {
 	if len(application.TimeRequest) == 0 {
 		return 0, ErrApplicationNoTimeRequest
 	}
@@ -52,21 +47,16 @@ func CreateApplication(ctx context.Context, venueID int, applicantUID string, va
 	return createdID, nil
 }
 
-// cmt: 权限校验请迁移至 Controller 层，Service 层仅负责业务逻辑处理，权限字段不进入 Service 层函数参数列表
-func DeleteApplication(ctx context.Context, applicationID int, requesterUID string, vagid int, sysPermMap uint64) error {
-	application, err := repository.GetApplicationByID(applicationID)
-	if err != nil {
+// cmt: 已迁移权限校验至 Controller 层，Service 删除逻辑仅执行存在性确认与级联软删除。
+func DeleteApplication(ctx context.Context, applicationID int) error {
+	if _, err := repository.GetApplicationByID(applicationID); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return ErrApplicationNotFound
 		}
 		return fmt.Errorf("%w: %w", ErrApplicationQueryInDB, err)
 	}
 
-	if !canDeleteApplication(*application, requesterUID, vagid, sysPermMap) {
-		return ErrApplicationPermissionDenied
-	}
-
-	err = database.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := database.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := repository.SoftDeleteApplicationCascadeWithTx(tx, applicationID); err != nil {
 			return err
 		}
@@ -78,11 +68,8 @@ func DeleteApplication(ctx context.Context, applicationID int, requesterUID stri
 	return nil
 }
 
-// cmt: 权限校验请迁移至 Controller 层，Service 层仅负责业务逻辑处理，权限字段不进入 Service 层函数参数列表
-func ListVenueApplications(ctx context.Context, venueID int, vagid int, sysPermMap uint64) ([]models.Application, error) {
-	if !canReserve(venueID, vagid, sysPermMap) {
-		return nil, ErrApplicationPermissionDenied
-	}
+// cmt: 已迁移权限校验至 Controller 层，Service 列表接口仅按业务维度查询。
+func ListVenueApplications(ctx context.Context, venueID int) ([]models.Application, error) {
 	applications, err := repository.ListApplicationsByVenueID(venueID)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrApplicationQueryInDB, err)
@@ -98,8 +85,8 @@ func ListUserApplications(ctx context.Context, applicantUID string) ([]models.Ap
 	return applications, nil
 }
 
-// cmt: 权限校验请迁移至 Controller 层，Service 层仅负责业务逻辑处理，权限字段不进入 Service 层函数参数列表
-func ReviewApplication(ctx context.Context, approval models.ApplicationApproval, reviewerUID string, vagid int, sysPermMap uint64) (ApprovalResult, error) {
+// cmt: 已迁移权限校验至 Controller 层，Service 审批逻辑仅校验状态与冲突并执行事务。
+func ReviewApplication(ctx context.Context, approval models.ApplicationApproval, reviewerUID string) (ApprovalResult, error) {
 	if approval.Decision != models.ApprovalDecisionApproved && approval.Decision != models.ApprovalDecisionRejected {
 		return ApprovalResult{}, ErrApplicationDecisionInvalid
 	}
@@ -110,9 +97,6 @@ func ReviewApplication(ctx context.Context, approval models.ApplicationApproval,
 			return ApprovalResult{}, ErrApplicationNotFound
 		}
 		return ApprovalResult{}, fmt.Errorf("%w: %w", ErrApplicationQueryInDB, err)
-	}
-	if !canApprove(application.VenueID, vagid, sysPermMap) {
-		return ApprovalResult{}, ErrApplicationPermissionDenied
 	}
 	if application.ApplicationStatus != models.ApplicationStatusRequested {
 		return ApprovalResult{}, ErrApplicationStatusInvalid
@@ -184,30 +168,16 @@ func ReviewApplication(ctx context.Context, approval models.ApplicationApproval,
 	return ApprovalResult{}, nil
 }
 
-func canReserve(venueID int, vagid int, sysPermMap uint64) bool {
-	// TODO 此函数可以被提取
-	if systemPermission.Check(sysPermMap, systemPermission.AllVenueReservation) {
-		return true
+func GetApplicationByID(ctx context.Context, applicationID int) (*models.Application, error) {
+	_ = ctx
+	application, err := repository.GetApplicationByID(applicationID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, ErrApplicationNotFound
+		}
+		return nil, fmt.Errorf("%w: %w", ErrApplicationQueryInDB, err)
 	}
-	return venuePermission.CheckVenuePermission(vagid, venueID, venuePermission.Reserve)
-}
-
-func canApprove(venueID int, vagid int, sysPermMap uint64) bool {
-	// TODO 此函数可以被提取
-	if systemPermission.Check(sysPermMap, systemPermission.AllVenueApproval) {
-		return true
-	}
-	return venuePermission.CheckVenuePermission(vagid, venueID, venuePermission.Approval)
-}
-
-func canDeleteApplication(application models.Application, requesterUID string, vagid int, sysPermMap uint64) bool {
-	if requesterUID == application.ApplicantUID {
-		return true
-	}
-	if systemPermission.Check(sysPermMap, systemPermission.AllVenueManage) {
-		return true
-	}
-	return venuePermission.CheckVenuePermission(vagid, application.VenueID, venuePermission.Manage)
+	return application, nil
 }
 
 func normalizeConflictIDs(values []int) []int {

@@ -20,6 +20,11 @@ func CreateApplicationHandler(c *gin.Context) {
 	if !ok {
 		return
 	}
+	// cmt: 已将 Reserve/AllVenueReservation 权限校验前置到 Controller 层。
+	if !hasVenueReservePermission(vagid, sysPermMap, venueID) {
+		apiException.AbortWithException(c, apiException.VenuePermNotSatisfied)
+		return
+	}
 
 	var req createApplicationForm
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -40,7 +45,7 @@ func CreateApplicationHandler(c *gin.Context) {
 		return
 	}
 
-	applicationID, err := applicationSvc.CreateApplication(c.Request.Context(), venueID, userID, vagid, sysPermMap, application)
+	applicationID, err := applicationSvc.CreateApplication(c.Request.Context(), venueID, userID, application)
 	if err != nil {
 		handleServiceError(c, err)
 		return

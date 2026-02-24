@@ -51,40 +51,68 @@ func CreateAttachment(modelA *models.Attachment, bizType, bizID, bizIndex int) e
 }
 
 func CreateAttachmentWithTx(tx *gorm.DB, modelA *models.Attachment, bizType, bizID, bizIndex int) error {
-	var attachmentEntity AttachmentEntity
-	attachmentEntity.BizType = bizType
-	attachmentEntity.BizID = bizID
-	attachmentEntity.BizIndex = bizIndex
-	attachmentEntity.fromDomain(modelA)
-	txDB := tx.Create(&attachmentEntity)
-	if txDB.Error != nil {
-		return txDB.Error
-	}
-	if err := FileObjectLinked(modelA.FileToken); err != nil {
-		return err
-	}
-	return nil
+	modelA.Index = bizIndex
+	return CreateAttachmentsWithTx(tx, bizType, bizID, []models.Attachment{*modelA})
 }
 
-// cmt: 修改为批量处理避免重复数据库调用。即将bizID字段更改为 []int 同时修改所有调用方。
-func SoftDeleteAttachmentsByBizWithTx(tx *gorm.DB, bizType, bizID int) error {
+func CreateAttachmentsWithTx(tx *gorm.DB, bizType, bizID int, attachments []models.Attachment) error {
+	if len(attachments) == 0 {
+		return nil
+	}
+
+	// 批量转换并构建 entities 供附件表批量插入
+	// 同时收集 fileTokens 供后续批量建引用调用
+	entities := make([]AttachmentEntity, 0, len(attachments))
+	fileTokens := make([]string, 0, len(attachments))
+	for idx, attachment := range attachments {
+		if attachment.Index < 0 {
+			attachment.Index = idx
+		}
+		entity := AttachmentEntity{
+			BizType:  bizType,
+			BizID:    bizID,
+			BizIndex: attachment.Index,
+		}
+		entity.fromDomain(&attachment)
+		entities = append(entities, entity)
+		fileTokens = append(fileTokens, attachment.FileToken)
+	}
+
+	if err := tx.Create(&entities).Error; err != nil {
+		return err
+	}
+
+	return FileObjectLinkedBatchWithTx(tx, fileTokens)
+}
+
+// cmt: 已改为批量处理，bizID 参数调整为 []int，并将 file_object 解绑合并为单次批量更新。
+func SoftDeleteAttachmentsByBizWithTx(tx *gorm.DB, bizType int, bizIDs []int) error {
+	if len(bizIDs) == 0 {
+		return nil
+	}
+
 	var attachments []AttachmentEntity
 	if err := tx.
 		Model(&AttachmentEntity{}).
-		Where("biz_type = ? AND biz_id = ?", bizType, bizID).
+		Where(&AttachmentEntity{BizType: bizType}).
+		Where("biz_id IN ?", bizIDs).
+		Select("file_token").
 		Find(&attachments).Error; err != nil {
 		return err
 	}
 
+	fileTokens := make([]string, 0, len(attachments))
 	for _, attachment := range attachments {
-		if err := FileObjectUnlinked(attachment.FileToken); err != nil {
-			return err
-		}
+		fileTokens = append(fileTokens, attachment.FileToken)
+	}
+	if err := FileObjectUnlinkedBatchWithTx(tx, fileTokens); err != nil {
+		return err
 	}
 
 	return tx.
 		Model(&AttachmentEntity{}).
-		Where("biz_type = ? AND biz_id = ?", bizType, bizID).
+		Where(&AttachmentEntity{BizType: bizType}).
+		Where("biz_id IN ?", bizIDs).
 		Delete(&AttachmentEntity{}).Error
 }
 

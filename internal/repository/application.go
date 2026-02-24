@@ -85,9 +85,13 @@ func CreateApplicationWithTx(tx *gorm.DB, application *models.Application) (int,
 		}
 	}
 
-	for idx, attachment := range application.Attachments {
-		attachment.Index = idx
-		if err := CreateAttachmentWithTx(tx, &attachment, AttachmentBizTypeApplication, entity.ID, idx); err != nil {
+	if len(application.Attachments) > 0 {
+		attachments := make([]models.Attachment, 0, len(application.Attachments))
+		for idx, attachment := range application.Attachments {
+			attachment.Index = idx
+			attachments = append(attachments, attachment)
+		}
+		if err := CreateAttachmentsWithTx(tx, AttachmentBizTypeApplication, entity.ID, attachments); err != nil {
 			return 0, err
 		}
 	}
@@ -105,9 +109,13 @@ func CreateApplicationCommentWithTx(tx *gorm.DB, comment *models.ApplicationComm
 	if err := tx.Create(&entity).Error; err != nil {
 		return 0, err
 	}
-	for idx, attachment := range comment.Attachments {
-		attachment.Index = idx
-		if err := CreateAttachmentWithTx(tx, &attachment, AttachmentBizTypeApplicationComment, entity.ID, idx); err != nil {
+	if len(comment.Attachments) > 0 {
+		attachments := make([]models.Attachment, 0, len(comment.Attachments))
+		for idx, attachment := range comment.Attachments {
+			attachment.Index = idx
+			attachments = append(attachments, attachment)
+		}
+		if err := CreateAttachmentsWithTx(tx, AttachmentBizTypeApplicationComment, entity.ID, attachments); err != nil {
 			return 0, err
 		}
 	}
@@ -115,7 +123,7 @@ func CreateApplicationCommentWithTx(tx *gorm.DB, comment *models.ApplicationComm
 }
 
 func GetApplicationByID(applicationID int) (*models.Application, error) {
-	applications, err := queryApplications(database.DB.Where("id = ?", applicationID))
+	applications, err := queryApplications(database.DB.Where(&ApplicationEntity{ID: applicationID}))
 	if err != nil {
 		return nil, err
 	}
@@ -126,23 +134,23 @@ func GetApplicationByID(applicationID int) (*models.Application, error) {
 }
 
 func ListApplicationsByVenueID(venueID int) ([]models.Application, error) {
-	return queryApplications(database.DB.Where("venue_id = ?", venueID))
+	return queryApplications(database.DB.Where(&ApplicationEntity{VenueID: venueID}))
 }
 
 func ListApplicationsByApplicantUID(applicantUID string) ([]models.Application, error) {
-	return queryApplications(database.DB.Where("applicant_uid = ?", applicantUID))
+	return queryApplications(database.DB.Where(&ApplicationEntity{ApplicantUID: applicantUID}))
 }
 
 // 软删除申请单及其关联的时间段、评论、附件等数据
 func SoftDeleteApplicationCascadeWithTx(tx *gorm.DB, applicationID int) error {
 	// 删除申请单关联时间段
 	if err := tx.Model(&ApplicationTimeslotEntity{}).
-		Where("application_id = ?", applicationID).
+		Where(&ApplicationTimeslotEntity{ApplicationID: &applicationID}).
 		Delete(&ApplicationTimeslotEntity{}).Error; err != nil {
 		return err
 	}
 	// 删除申请单附件
-	if err := SoftDeleteAttachmentsByBizWithTx(tx, AttachmentBizTypeApplication, applicationID); err != nil {
+	if err := SoftDeleteAttachmentsByBizWithTx(tx, AttachmentBizTypeApplication, []int{applicationID}); err != nil {
 		return err
 	}
 
@@ -150,32 +158,35 @@ func SoftDeleteApplicationCascadeWithTx(tx *gorm.DB, applicationID int) error {
 	var comments []ApplicationCommentEntity
 	// 列出评论
 	if err := tx.Model(&ApplicationCommentEntity{}).
-		Where("application_id = ?", applicationID).
+		Where(&ApplicationCommentEntity{ApplicationID: applicationID}).
 		Find(&comments).Error; err != nil {
 		return err
 	}
 	// 删除评论附件
-	for _, comment := range comments { // cmt: 使用批量删除，见该方法下的评论。
-		if err := SoftDeleteAttachmentsByBizWithTx(tx, AttachmentBizTypeApplicationComment, comment.ID); err != nil {
-			return err
-		}
+	commentIDs := make([]int, 0, len(comments))
+	for _, comment := range comments {
+		commentIDs = append(commentIDs, comment.ID)
+	}
+	// cmt: 已改为批量删除评论附件，避免在循环中逐条触发数据库操作。
+	if err := SoftDeleteAttachmentsByBizWithTx(tx, AttachmentBizTypeApplicationComment, commentIDs); err != nil {
+		return err
 	}
 	// 删除评论主体
 	if err := tx.Model(&ApplicationCommentEntity{}).
-		Where("application_id = ?", applicationID).
+		Where(&ApplicationCommentEntity{ApplicationID: applicationID}).
 		Delete(&ApplicationCommentEntity{}).Error; err != nil {
 		return err
 	}
 
 	// 删除申请单主体
 	return tx.Model(&ApplicationEntity{}).
-		Where("id = ?", applicationID).
+		Where(&ApplicationEntity{ID: applicationID}).
 		Delete(&ApplicationEntity{}).Error
 }
 
 func UpdateApplicationStatusWithTx(tx *gorm.DB, applicationID int, status string) error {
 	return tx.Model(&ApplicationEntity{}).
-		Where("id = ?", applicationID).
+		Where(&ApplicationEntity{ID: applicationID}).
 		Update("application_status", status).Error
 }
 

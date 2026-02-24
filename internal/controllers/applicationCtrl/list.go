@@ -3,6 +3,7 @@ package applicationCtrl
 import (
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/service/applicationSvc"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/apiException"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,8 +16,13 @@ func ListVenueApplicationsHandler(c *gin.Context) {
 	if !ok {
 		return
 	}
+	// cmt: 已将场地下申请单列表权限校验前置到 Controller 层，规则为 Reserve/AllVenueReservation。
+	if !hasVenueReservePermission(vagid, sysPermMap, venueID) {
+		apiException.AbortWithException(c, apiException.VenuePermNotSatisfied)
+		return
+	}
 
-	applications, err := applicationSvc.ListVenueApplications(c.Request.Context(), venueID, vagid, sysPermMap)
+	applications, err := applicationSvc.ListVenueApplications(c.Request.Context(), venueID)
 	if err != nil {
 		handleServiceError(c, err)
 		return

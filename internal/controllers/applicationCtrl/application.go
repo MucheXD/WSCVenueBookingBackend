@@ -9,6 +9,8 @@ import (
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/service/applicationSvc"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/apiException"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/systemPermission"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/venuePermission"
 	"github.com/gin-gonic/gin"
 )
 
@@ -149,10 +151,6 @@ func getPermissionContext(c *gin.Context) (int, uint64, bool) {
 
 // 统一负责转换 Service 层错误与 apiException
 func handleServiceError(c *gin.Context, err error) {
-	if errors.Is(err, applicationSvc.ErrApplicationPermissionDenied) {
-		apiException.AbortWithException(c, apiException.VenuePermNotSatisfied, err)
-		return
-	}
 	if errors.Is(err, applicationSvc.ErrApplicationNotFound) {
 		apiException.AbortWithException(c, apiException.NotFound, err)
 		return
@@ -165,6 +163,31 @@ func handleServiceError(c *gin.Context, err error) {
 		return
 	}
 	apiException.AbortWithException(c, apiException.ServerError, err)
+}
+
+// cmt: 额外重构，新增 Controller 层权限函数，统一处理申请模块权限判断逻辑。
+func hasVenueReservePermission(vagid int, sysPermMap uint64, venueID int) bool {
+	if systemPermission.Check(sysPermMap, systemPermission.AllVenueReservation) {
+		return true
+	}
+	return venuePermission.CheckVenuePermission(vagid, venueID, venuePermission.Reserve)
+}
+
+func hasVenueApprovalPermission(vagid int, sysPermMap uint64, venueID int) bool {
+	if systemPermission.Check(sysPermMap, systemPermission.AllVenueApproval) {
+		return true
+	}
+	return venuePermission.CheckVenuePermission(vagid, venueID, venuePermission.Approval)
+}
+
+func canDeleteApplication(requesterUID string, vagid int, sysPermMap uint64, application models.Application) bool {
+	if requesterUID == application.ApplicantUID {
+		return true
+	}
+	if systemPermission.Check(sysPermMap, systemPermission.AllVenueManage) {
+		return true
+	}
+	return venuePermission.CheckVenuePermission(vagid, application.VenueID, venuePermission.Manage)
 }
 
 // 预留处理函数

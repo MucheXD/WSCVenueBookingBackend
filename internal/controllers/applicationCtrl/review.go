@@ -19,8 +19,19 @@ func ReviewApplicationHandler(c *gin.Context) {
 		return
 	}
 
+	application, err := applicationSvc.GetApplicationByID(c.Request.Context(), applicationID)
+	if err != nil {
+		handleServiceError(c, err)
+		return
+	}
+	// cmt: 已将审批权限校验前置到 Controller 层，规则为 Approval/AllVenueApproval。
+	if !hasVenueApprovalPermission(vagid, sysPermMap, application.VenueID) {
+		apiException.AbortWithException(c, apiException.VenuePermNotSatisfied)
+		return
+	}
+
 	var req reviewApplicationForm
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err = c.ShouldBindJSON(&req); err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
@@ -38,7 +49,7 @@ func ReviewApplicationHandler(c *gin.Context) {
 		}
 	}
 
-	result, err := applicationSvc.ReviewApplication(c.Request.Context(), approval, reviewerUID, vagid, sysPermMap)
+	result, err := applicationSvc.ReviewApplication(c.Request.Context(), approval, reviewerUID)
 	if err != nil {
 		handleServiceError(c, err)
 		return
