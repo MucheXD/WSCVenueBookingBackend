@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/config/database"
@@ -9,43 +10,55 @@ import (
 )
 
 type FileObjectEntity struct {
-	FID       int    `gorm:"column:fid;primaryKey"`
-	FileToken string `gorm:"column:file_token"`
-	FileHash  string `gorm:"column:file_hash"`
-	FilePath  string `gorm:"column:file_path"`
-	FileSize  int64  `gorm:"column:file_size"`
-	LinkCount int    `gorm:"column:link_count"`
+	FID         int    `gorm:"column:fid;primaryKey"`
+	FileToken   string `gorm:"column:file_token"`
+	FileHash    string `gorm:"column:file_hash"`
+	FileSize    int64  `gorm:"column:file_size"`
+	StorageType int    `gorm:"column:storage_type"`
+	LinkCount   int    `gorm:"column:link_count"`
 }
 
 func (FileObjectEntity) TableName() string {
 	return "file_objects"
 }
 
-// TODO: 文件落盘逻辑
+func CreateFileObject(modelF *models.FileObject) error {
+	if modelF == nil {
+		return errors.New("file object model is nil")
+	}
+	var entity FileObjectEntity
+	entity.fromDomain(modelF)
+	return database.DB.Create(&entity).Error
+}
 
-// func createFileObject(modelF *models.FileObject) error {
-// 	var entity FileObjectEntity
-// 	entity.fromDomain(modelF)
-// 	return database.DB.Create(&entity).Error
-// }
+func GetFileObjectByToken(fileToken string) (*models.FileObject, error) {
+	var entity FileObjectEntity
+	txDB := database.DB.
+		Where(&FileObjectEntity{FileToken: fileToken}).
+		Take(&entity)
+	if txDB.Error != nil {
+		return nil, txDB.Error
+	}
+	return entity.toDomain(), nil
+}
 
-// func getFileObjectByToken(fileToken string) (*models.FileObject, error) {
-// 	var entity FileObjectEntity
-// 	txDB := database.DB.
-// 		Where(&FileObjectEntity{FileToken: fileToken}).
-// 		Take(&entity)
-// 	if txDB.Error != nil {
-// 		return nil, txDB.Error
-// 	}
-// 	return entity.toDomain(), nil
-// }
+func GetFileObjectByHash(fileHash string) (*models.FileObject, error) {
+	var entity FileObjectEntity
+	txDB := database.DB.
+		Where(&FileObjectEntity{FileHash: fileHash}).
+		Take(&entity)
+	if txDB.Error != nil {
+		return nil, txDB.Error
+	}
+	return entity.toDomain(), nil
+}
 
-// func deleteFileObjectByToken(fileToken string) error {
-// 	txDB := database.DB.
-// 		Where(&FileObjectEntity{FileToken: fileToken}).
-// 		Delete(&FileObjectEntity{})
-// 	return txDB.Error
-// }
+func DeleteFileObjectByToken(fileToken string) error {
+	txDB := database.DB.
+		Where(&FileObjectEntity{FileToken: fileToken}).
+		Delete(&FileObjectEntity{})
+	return txDB.Error
+}
 
 func FileObjectLinked(fileToken string) error {
 	return FileObjectLinkedTx(database.DB, fileToken)
@@ -144,13 +157,15 @@ func (f *FileObjectEntity) fromDomain(modelF *models.FileObject) {
 	f.FileToken = modelF.FileToken
 	f.FileHash = modelF.FileHash
 	f.FileSize = modelF.FileSize
+	f.StorageType = modelF.StorageType
 	f.LinkCount = 0
 }
 
 func (f *FileObjectEntity) toDomain() *models.FileObject {
 	return &models.FileObject{
-		FileToken: f.FileToken,
-		FileHash:  f.FileHash,
-		FileSize:  f.FileSize,
+		FileToken:   f.FileToken,
+		FileHash:    f.FileHash,
+		FileSize:    f.FileSize,
+		StorageType: f.StorageType,
 	}
 }

@@ -1,24 +1,30 @@
 # Example configuration file
 
-# Server configuration
-# server:
-#   host: "0.0.0.0"
-#   port: 8080
-#   mode: "development"  # development, production
-
-# Database configuration
-# database:
-#   host: "localhost"
-#   port: 5432
-#   user: "user"
-#   password: "password"
-#   database: "dbname"
-#   sslmode: "disable"
+#Database configuration
+database:
+  host: "111.111.111.111"
+  port: 1000
+  user: "root"
+  password: ""
+  database: "dev"
+redis:
+    addr: "111.111.111.111:2000"
+    password: ""
 
 # JWT configuration
 jwt:
-    secret: "your-secret-key"
+    secret: ""
     expiration: 3600  # seconds
+
+# Service configuration
+service:
+    secret:
+        login_token_salt: ""
+
+storage:
+    local:
+        root_path: "/var/app/storage"
+
 
 # Logging configuration
 # logging:

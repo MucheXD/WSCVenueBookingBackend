@@ -5,6 +5,6 @@ CREATE TABLE file_objects (
     file_token char(64) NOT NULL UNIQUE COMMENT 'Unique token for file access, calculated from hash and salt',
     file_hash char(64) NOT NULL UNIQUE COMMENT 'Hash of the file',
     file_size bigint COMMENT 'Size of the file in bytes',
-    file_path varchar(255) NOT NULL COMMENT '(RepoLayerOnly) File name in the storage',
+    storage_type int NOT NULL COMMENT 'Storage type (e.g., 0 for local, 1 for OSS)',
     link_count int DEFAULT 0 COMMENT '(RepoLayerOnly) Number of references to this file, used for garbage collection'
 ) COMMENT 'File Objects Table';

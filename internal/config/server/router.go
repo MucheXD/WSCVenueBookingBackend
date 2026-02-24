@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/controllers/applicationCtrl"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/controllers/fileCtrl"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/controllers/userCtrl"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/controllers/venueCtrl"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/middlewares"
@@ -22,6 +23,12 @@ func initRouter() {
 		userCtrl.UserRegisterHandler)
 	GinEngine.PATCH("/api/user/edit-profile", middlewares.AuthMiddleware(),
 		userCtrl.UpdateUserProfileHandler)
+
+	// 文件相关路由
+	GinEngine.POST("/api/file",
+		fileCtrl.UploadFileHandler)
+	GinEngine.GET("/api/file/:filetoken",
+		fileCtrl.DownloadFileHandler)
 
 	// 场地相关路由
 	// 创建场地 - 需要 CreateNewVenue 系统权限
