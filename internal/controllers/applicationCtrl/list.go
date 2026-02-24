@@ -16,7 +16,7 @@ func ListVenueApplicationsHandler(c *gin.Context) {
 	if !ok {
 		return
 	}
-	// cmt: 已将场地下申请单列表权限校验前置到 Controller 层，规则为 Reserve/AllVenueReservation。
+
 	if !hasVenueReservePermission(vagid, sysPermMap, venueID) {
 		apiException.AbortWithException(c, apiException.VenuePermNotSatisfied)
 		return

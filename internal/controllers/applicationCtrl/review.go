@@ -24,7 +24,7 @@ func ReviewApplicationHandler(c *gin.Context) {
 		handleServiceError(c, err)
 		return
 	}
-	// cmt: 已将审批权限校验前置到 Controller 层，规则为 Approval/AllVenueApproval。
+
 	if !hasVenueApprovalPermission(vagid, sysPermMap, application.VenueID) {
 		apiException.AbortWithException(c, apiException.VenuePermNotSatisfied)
 		return

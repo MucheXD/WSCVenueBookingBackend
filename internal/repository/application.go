@@ -167,7 +167,7 @@ func SoftDeleteApplicationCascadeWithTx(tx *gorm.DB, applicationID int) error {
 	for _, comment := range comments {
 		commentIDs = append(commentIDs, comment.ID)
 	}
-	// cmt: 已改为批量删除评论附件，避免在循环中逐条触发数据库操作。
+
 	if err := SoftDeleteAttachmentsByBizWithTx(tx, AttachmentBizTypeApplicationComment, commentIDs); err != nil {
 		return err
 	}

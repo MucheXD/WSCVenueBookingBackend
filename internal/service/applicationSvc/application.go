@@ -16,7 +16,6 @@ type ApprovalResult struct {
 	NewConflicts []string
 }
 
-// cmt: 已迁移权限校验至 Controller 层，Service 入参移除了权限字段，仅处理申请业务与事务。
 func CreateApplication(ctx context.Context, venueID int, applicantUID string, application models.Application) (int, error) {
 	if len(application.TimeRequest) == 0 {
 		return 0, ErrApplicationNoTimeRequest
@@ -47,7 +46,6 @@ func CreateApplication(ctx context.Context, venueID int, applicantUID string, ap
 	return createdID, nil
 }
 
-// cmt: 已迁移权限校验至 Controller 层，Service 删除逻辑仅执行存在性确认与级联软删除。
 func DeleteApplication(ctx context.Context, applicationID int) error {
 	if _, err := repository.GetApplicationByID(applicationID); err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -68,7 +66,6 @@ func DeleteApplication(ctx context.Context, applicationID int) error {
 	return nil
 }
 
-// cmt: 已迁移权限校验至 Controller 层，Service 列表接口仅按业务维度查询。
 func ListVenueApplications(ctx context.Context, venueID int) ([]models.Application, error) {
 	applications, err := repository.ListApplicationsByVenueID(venueID)
 	if err != nil {
@@ -85,7 +82,6 @@ func ListUserApplications(ctx context.Context, applicantUID string) ([]models.Ap
 	return applications, nil
 }
 
-// cmt: 已迁移权限校验至 Controller 层，Service 审批逻辑仅校验状态与冲突并执行事务。
 func ReviewApplication(ctx context.Context, approval models.ApplicationApproval, reviewerUID string) (ApprovalResult, error) {
 	if approval.Decision != models.ApprovalDecisionApproved && approval.Decision != models.ApprovalDecisionRejected {
 		return ApprovalResult{}, ErrApplicationDecisionInvalid

@@ -85,7 +85,6 @@ func CreateAttachmentsWithTx(tx *gorm.DB, bizType, bizID int, attachments []mode
 	return FileObjectLinkedBatchWithTx(tx, fileTokens)
 }
 
-// cmt: 已改为批量处理，bizID 参数调整为 []int，并将 file_object 解绑合并为单次批量更新。
 func SoftDeleteAttachmentsByBizWithTx(tx *gorm.DB, bizType int, bizIDs []int) error {
 	if len(bizIDs) == 0 {
 		return nil

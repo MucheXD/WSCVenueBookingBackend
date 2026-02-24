@@ -23,7 +23,7 @@ func DeleteApplicationHandler(c *gin.Context) {
 		handleServiceError(c, err)
 		return
 	}
-	// cmt: 已将删除权限校验前置到 Controller 层，规则为 申请人本人 或 Manage/AllVenueManage。
+
 	if !canDeleteApplication(requesterUID, vagid, sysPermMap, *application) {
 		apiException.AbortWithException(c, apiException.VenuePermNotSatisfied)
 		return

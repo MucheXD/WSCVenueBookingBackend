@@ -165,7 +165,7 @@ func handleServiceError(c *gin.Context, err error) {
 	apiException.AbortWithException(c, apiException.ServerError, err)
 }
 
-// cmt: 额外重构，新增 Controller 层权限函数，统一处理申请模块权限判断逻辑。
+// 检查是否具有预约权限，规则为具有权限 Reserve 或 AllVenueReservation。
 func hasVenueReservePermission(vagid int, sysPermMap uint64, venueID int) bool {
 	if systemPermission.Check(sysPermMap, systemPermission.AllVenueReservation) {
 		return true
@@ -173,6 +173,7 @@ func hasVenueReservePermission(vagid int, sysPermMap uint64, venueID int) bool {
 	return venuePermission.CheckVenuePermission(vagid, venueID, venuePermission.Reserve)
 }
 
+// 检查是否具有审批权限，规则为具有权限 Approval 或 AllVenueApproval。
 func hasVenueApprovalPermission(vagid int, sysPermMap uint64, venueID int) bool {
 	if systemPermission.Check(sysPermMap, systemPermission.AllVenueApproval) {
 		return true
@@ -180,6 +181,7 @@ func hasVenueApprovalPermission(vagid int, sysPermMap uint64, venueID int) bool 
 	return venuePermission.CheckVenuePermission(vagid, venueID, venuePermission.Approval)
 }
 
+// 检查是否满足删除申请单条件，规则为申请人本人或具有权限 Manage/AllVenueManage。
 func canDeleteApplication(requesterUID string, vagid int, sysPermMap uint64, application models.Application) bool {
 	if requesterUID == application.ApplicantUID {
 		return true

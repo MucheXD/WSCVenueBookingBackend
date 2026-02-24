@@ -20,7 +20,7 @@ func CreateApplicationHandler(c *gin.Context) {
 	if !ok {
 		return
 	}
-	// cmt: 已将 Reserve/AllVenueReservation 权限校验前置到 Controller 层。
+
 	if !hasVenueReservePermission(vagid, sysPermMap, venueID) {
 		apiException.AbortWithException(c, apiException.VenuePermNotSatisfied)
 		return
