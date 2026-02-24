@@ -6,7 +6,7 @@ CREATE TABLE venue_timeslots (
     start_time TIMESTAMP not null COMMENT 'Occupation start time',
     end_time TIMESTAMP COMMENT 'Occupation end time, null for not sure',
     application_id int COMMENT 'Associated application id, null if not applicable',
-    status char(8) not null COMMENT 'Timeslot status',
+    deleted_at TIMESTAMP NULL COMMENT '(RepoLayerOnly) Soft delete timestamp',
     Foreign Key (venue_id) REFERENCES venues (venue_id),
     Foreign Key (application_id) REFERENCES applications (id)
 )

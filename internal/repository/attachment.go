@@ -3,10 +3,18 @@ package repository
 import (
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/config/database"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
+	"gorm.io/gorm"
+)
+
+const (
+	AttachmentBizTypeVenue              = 1
+	AttachmentBizTypeApplication        = 2
+	AttachmentBizTypeApplicationComment = 3
 )
 
 type AttachmentEntity struct {
-	ID int `gorm:"column:id;primaryKey"`
+	ID        int            `gorm:"column:id;primaryKey"`
+	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at"`
 	// Business Context
 	BizType  int `gorm:"column:biz_type"`
 	BizID    int `gorm:"column:biz_id"`
@@ -26,6 +34,7 @@ func GetAttachmentsByBiz(bizType, bizID int) ([]models.Attachment, error) {
 	txDB := database.DB.
 		Model(&AttachmentEntity{}).
 		Where(&AttachmentEntity{BizType: bizType, BizID: bizID}).
+		Order("biz_index ASC").
 		Find(&attachmentEntities)
 	if txDB.Error != nil {
 		return nil, txDB.Error
@@ -38,20 +47,76 @@ func GetAttachmentsByBiz(bizType, bizID int) ([]models.Attachment, error) {
 }
 
 func CreateAttachment(modelA *models.Attachment, bizType, bizID, bizIndex int) error {
-	var attachmentEntity AttachmentEntity
-	attachmentEntity.BizType = bizType
-	attachmentEntity.BizID = bizID
-	attachmentEntity.BizIndex = bizIndex
-	attachmentEntity.fromDomain(modelA)
-	txDB := database.DB.Create(&attachmentEntity)
-	if txDB.Error != nil {
-		return txDB.Error
+	return CreateAttachmentTx(database.DB, modelA, bizType, bizID, bizIndex)
+}
+
+func CreateAttachmentTx(tx *gorm.DB, modelA *models.Attachment, bizType, bizID, bizIndex int) error {
+	modelA.Index = bizIndex
+	return CreateAttachmentsTx(tx, bizType, bizID, []models.Attachment{*modelA})
+}
+
+func CreateAttachmentsTx(tx *gorm.DB, bizType, bizID int, attachments []models.Attachment) error {
+	if len(attachments) == 0 {
+		return nil
 	}
-	FileObjectLinked(modelA.FileToken)
-	return nil
+
+	// 批量转换并构建 entities 供附件表批量插入
+	// 同时收集 fileTokens 供后续批量建引用调用
+	entities := make([]AttachmentEntity, 0, len(attachments))
+	fileTokens := make([]string, 0, len(attachments))
+	for idx, attachment := range attachments {
+		if attachment.Index < 0 {
+			attachment.Index = idx
+		}
+		entity := AttachmentEntity{
+			BizType:  bizType,
+			BizID:    bizID,
+			BizIndex: attachment.Index,
+		}
+		entity.fromDomain(&attachment)
+		entities = append(entities, entity)
+		fileTokens = append(fileTokens, attachment.FileToken)
+	}
+
+	if err := tx.Create(&entities).Error; err != nil {
+		return err
+	}
+
+	return FileObjectLinkedBatchTx(tx, fileTokens)
+}
+
+func SoftDeleteBizAttachmentsTx(tx *gorm.DB, bizType int, bizIDs []int) error {
+	if len(bizIDs) == 0 {
+		return nil
+	}
+
+	var attachments []AttachmentEntity
+	if err := tx.
+		Model(&AttachmentEntity{}).
+		Where(&AttachmentEntity{BizType: bizType}).
+		Where("biz_id IN ?", bizIDs).
+		Select("file_token").
+		Find(&attachments).Error; err != nil {
+		return err
+	}
+
+	fileTokens := make([]string, 0, len(attachments))
+	for _, attachment := range attachments {
+		fileTokens = append(fileTokens, attachment.FileToken)
+	}
+	if err := FileObjectUnlinkedBatchTx(tx, fileTokens); err != nil {
+		return err
+	}
+
+	return tx.
+		Model(&AttachmentEntity{}).
+		Where(&AttachmentEntity{BizType: bizType}).
+		Where("biz_id IN ?", bizIDs).
+		Delete(&AttachmentEntity{}).Error
 }
 
 func (a *AttachmentEntity) fromDomain(modelA *models.Attachment) {
+	a.BizIndex = modelA.Index
 	a.BizFileType = modelA.BizFileType
 	a.BizFileName = modelA.BizFileName
 	a.FileToken = modelA.FileToken
@@ -59,6 +124,7 @@ func (a *AttachmentEntity) fromDomain(modelA *models.Attachment) {
 
 func (a *AttachmentEntity) toDomain() models.Attachment {
 	return models.Attachment{
+		Index:       a.BizIndex,
 		BizFileType: a.BizFileType,
 		BizFileName: a.BizFileName,
 		FileToken:   a.FileToken,

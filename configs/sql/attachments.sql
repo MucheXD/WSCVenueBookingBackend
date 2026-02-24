@@ -8,5 +8,6 @@ CREATE TABLE attachments (
     biz_filetype VARCHAR(32) COMMENT 'Type of the file in biz context (e.g., "image")',
     biz_filename VARCHAR(255) COMMENT 'Original filename of the attachment',
     file_token char(64) NOT NULL COMMENT 'File token of the attachment file',
+    deleted_at TIMESTAMP NULL COMMENT '(RepoLayerOnly) Soft delete timestamp',
     Foreign Key (file_token) REFERENCES file_objects (file_token)
 ) COMMENT 'Table for storing attachments related to venue applications';
