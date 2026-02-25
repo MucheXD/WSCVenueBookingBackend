@@ -21,8 +21,10 @@ func initRouter() {
 		userCtrl.PasswordLoginHandler)
 	GinEngine.POST("/api/register",
 		userCtrl.UserRegisterHandler)
-	GinEngine.PATCH("/api/user/edit-profile", middlewares.AuthMiddleware(),
+	GinEngine.PUT("/api/user/profile", middlewares.AuthMiddleware(),
 		userCtrl.UpdateUserProfileHandler)
+	GinEngine.POST("/api/user/change-password", middlewares.AuthMiddleware(),
+		userCtrl.UserChangePwdHandler)
 
 	// 文件相关路由
 	GinEngine.POST("/api/file",

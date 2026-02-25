@@ -10,10 +10,10 @@ import (
 )
 
 type UserChangePwdForm struct {
-	VerifyType string `form:"verify_type" binding:"required"`
-	VerifyData string `form:"verify_data" binding:"required"`
-	NewPwd     string `form:"new_password" binding:"required"`
-	NewPwdSalt string `form:"new_salt" binding:"required"`
+	VerifyType string `json:"verify_type" binding:"required"`
+	VerifyData string `json:"verify_data" binding:"required"`
+	NewPwd     string `json:"new_password" binding:"required"`
+	NewPwdSalt string `json:"new_salt" binding:"required"`
 }
 
 func UserChangePwdHandler(c *gin.Context) {

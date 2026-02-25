@@ -133,6 +133,24 @@ func GetApplicationByID(applicationID int) (*models.Application, error) {
 	return &applications[0], nil
 }
 
+// 获取申请单权限相关信息（创建用户、目标场地）的版本，供权限检查使用
+func GetApplicationPermRelatedByID(applicationID int) (*models.Application, error) {
+	var entity ApplicationEntity
+	err := database.DB.
+		Model(&ApplicationEntity{}).
+		Select("id", "venue_id", "applicant_uid").
+		Where("id = ?", applicationID).
+		First(&entity).Error
+	if err != nil {
+		return nil, err
+	}
+	return &models.Application{
+		ID:           entity.ID,
+		VenueID:      entity.VenueID,
+		ApplicantUID: entity.ApplicantUID,
+	}, nil
+}
+
 func ListApplicationsByVenueID(venueID int) ([]models.Application, error) {
 	return queryApplications(database.DB.Where(&ApplicationEntity{VenueID: venueID}))
 }

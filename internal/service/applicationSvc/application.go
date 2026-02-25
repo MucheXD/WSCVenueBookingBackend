@@ -47,13 +47,6 @@ func CreateApplication(ctx context.Context, venueID int, applicantUID string, ap
 }
 
 func DeleteApplication(ctx context.Context, applicationID int) error {
-	if _, err := repository.GetApplicationByID(applicationID); err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return ErrApplicationNotFound
-		}
-		return fmt.Errorf("%w: %w", ErrApplicationQueryInDB, err)
-	}
-
 	err := database.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := repository.SoftDeleteApplicationsTx(tx, applicationID); err != nil {
 			return err
@@ -61,6 +54,9 @@ func DeleteApplication(ctx context.Context, applicationID int) error {
 		return nil
 	})
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return ErrApplicationNotFound
+		}
 		return fmt.Errorf("%w: %w", ErrApplicationDeleteInDB, err)
 	}
 	return nil
@@ -69,6 +65,19 @@ func DeleteApplication(ctx context.Context, applicationID int) error {
 func GetApplicationByID(ctx context.Context, applicationID int) (*models.Application, error) {
 	_ = ctx
 	application, err := repository.GetApplicationByID(applicationID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, ErrApplicationNotFound
+		}
+		return nil, fmt.Errorf("%w: %w", ErrApplicationQueryInDB, err)
+	}
+	return application, nil
+}
+
+// 获取申请单权限相关信息（创建用户、目标场地）的版本，供权限检查使用
+func GetApplicationPermRelatedByID(ctx context.Context, applicationID int) (*models.Application, error) {
+	_ = ctx
+	application, err := repository.GetApplicationPermRelatedByID(applicationID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, ErrApplicationNotFound

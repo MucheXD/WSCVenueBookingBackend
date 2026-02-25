@@ -11,7 +11,8 @@ import (
 )
 
 type UserEditForm struct {
-	PhoneNumber string `form:"phone_number" binding:"required"`
+	PhoneNumber string `json:"phone_number"`
+	Username    string `json:"username"`
 }
 
 func UpdateUserProfileHandler(c *gin.Context) {
@@ -26,7 +27,9 @@ func UpdateUserProfileHandler(c *gin.Context) {
 	}
 
 	err := userSvc.UpdateUser(c.Request.Context(), c.GetString("UserID"),
-		models.User{PhoneNumber: req.PhoneNumber})
+		models.User{
+			PhoneNumber: req.PhoneNumber,
+			Username:    req.Username})
 
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
