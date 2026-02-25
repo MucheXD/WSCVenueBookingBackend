@@ -15,7 +15,7 @@ func initRouter() {
 	GinEngine.GET("/test", func(c *gin.Context) { c.String(200, "success") })
 
 	// 用户相关路由
-	GinEngine.GET("/api/get-login-session-salt",
+	GinEngine.GET("/api/login-session-salt",
 		userCtrl.StartLoginSessionHandler)
 	GinEngine.POST("/api/login",
 		userCtrl.PasswordLoginHandler)

@@ -82,6 +82,7 @@ type VenueListOptions struct {
 	Offset      int
 	Limit       int
 	VAGID       int
+	SysPerm     uint64
 }
 
 // ListVenues 列出场地
@@ -100,6 +101,7 @@ func ListVenues(ctx context.Context, opts VenueListOptions) ([]*models.Venue, er
 		Offset:      opts.Offset,
 		Limit:       opts.Limit,
 		VAGID:       opts.VAGID,
+		SysPerm:     opts.SysPerm,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrVenueQueryInDB, err)
@@ -109,12 +111,12 @@ func ListVenues(ctx context.Context, opts VenueListOptions) ([]*models.Venue, er
 }
 
 // GetAccessibleBuildingsAndCampuses 根据权限组获取可访问的楼区和校区信息
-func GetAccessibleBuildingsAndCampuses(ctx context.Context, vagid int) ([]*models.VenueBuilding, []*models.VenueCampus, error) {
-	buildings, err := repository.GetAccessibleBuildingList(vagid)
+func GetAccessibleBuildingsAndCampuses(ctx context.Context, vagid int, allowAll bool) ([]*models.VenueBuilding, []*models.VenueCampus, error) {
+	buildings, err := repository.GetAccessibleBuildingList(vagid, allowAll)
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %w", ErrBuildingQueryInDB, err)
 	}
-	campuses, err := repository.GetAccessibleCampusList(vagid)
+	campuses, err := repository.GetAccessibleCampusList(vagid, allowAll)
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %w", ErrCampusQueryInDB, err)
 	}

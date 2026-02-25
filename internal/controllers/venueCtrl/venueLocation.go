@@ -4,6 +4,7 @@ import (
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/service/venueSvc"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/apiException"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/systemPermission"
 	"github.com/gin-gonic/gin"
 )
 
@@ -41,8 +42,26 @@ func GetVenueLocationsHandler(c *gin.Context) {
 		return
 	}
 
+	permMapVal, exists := c.Get("SysPermissionMap")
+	if !exists {
+		apiException.AbortWithException(c, apiException.SysPermNotSatisfied)
+		return
+	}
+	sysPerm, ok := permMapVal.(uint64)
+	if !ok {
+		apiException.AbortWithException(c, apiException.SysPermNotSatisfied)
+		return
+	}
+
+	allowAll := systemPermission.SatisfyAny(sysPerm,
+		systemPermission.AllVenueReservation,
+		systemPermission.AllVenueApproval,
+		systemPermission.AllVenueManage,
+		systemPermission.AllVenueEdit,
+	)
+
 	// 调用服务层获取楼区和校区信息
-	buildings, campuses, err := venueSvc.GetAccessibleBuildingsAndCampuses(c.Request.Context(), vagid)
+	buildings, campuses, err := venueSvc.GetAccessibleBuildingsAndCampuses(c.Request.Context(), vagid, allowAll)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return

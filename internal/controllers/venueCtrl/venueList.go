@@ -21,7 +21,7 @@ type VenueDetailDTO struct {
 	DescriptionText string          `json:"description_text"`
 	CoverImageToken string          `json:"cover_image_token"`
 	Capacity        int             `json:"capacity"`
-	Permissions     []string        `json:"permission"`
+	Permissions     []string        `json:"permissions"`
 	Attachments     []AttachmentDTO `json:"attachments"`
 	Timetable       []TimeslotDTO   `json:"timetable"`
 }
@@ -35,8 +35,8 @@ type AttachmentDTO struct {
 
 // TimeslotDTO 时间段DTO
 type TimeslotDTO struct {
-	Start  string `json:"start"`
-	End    string `json:"end"`
+	Start string `json:"start"`
+	End   string `json:"end"`
 }
 
 // ListVenuesHandler 列出场地
@@ -68,6 +68,20 @@ func ListVenuesHandler(c *gin.Context) {
 	}
 
 	// 构造查询选项
+	// 提取系统权限字段
+	permMapVal, exists := c.Get("SysPermissionMap")
+	if !exists {
+		apiException.AbortWithException(c, apiException.SysPermNotSatisfied)
+		return
+	}
+	var sysPerm uint64
+	if permMap, ok := permMapVal.(uint64); ok {
+		sysPerm = permMap
+	} else {
+		apiException.AbortWithException(c, apiException.SysPermNotSatisfied)
+		return
+	}
+
 	opts := venueSvc.VenueListOptions{
 		BuildingIDs: buildingIDs,
 		TypeIDs:     typeIDs,
@@ -76,6 +90,7 @@ func ListVenuesHandler(c *gin.Context) {
 		Offset:      offset,
 		Limit:       limit,
 		VAGID:       vagid,
+		SysPerm:     sysPerm,
 	}
 
 	// 调用服务层查询场地列表
