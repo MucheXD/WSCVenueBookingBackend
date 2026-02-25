@@ -37,3 +37,4 @@ go.work.sum
 # secret files
 configs/secret/
 configs/config.yml
+configs/config.yml.prod
