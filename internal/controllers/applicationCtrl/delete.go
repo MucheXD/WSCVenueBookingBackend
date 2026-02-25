@@ -18,7 +18,7 @@ func DeleteApplicationHandler(c *gin.Context) {
 		return
 	}
 
-	application, err := applicationSvc.GetApplicationPermRelatedByID(c.Request.Context(), applicationID)
+	application, err := applicationSvc.GetApplicationBodyByID(c.Request.Context(), applicationID)
 	if err != nil {
 		handleServiceError(c, err)
 		return

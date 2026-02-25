@@ -15,19 +15,19 @@ const (
 )
 
 type Application struct {
-	ID                  int
-	VenueID             int
-	ApplicantUID        string
-	ApplicationType     string
-	ApplicationStatus   string
-	TimeRequest         []ApplicationTimeRequest
-	EstimatedParticipants *int
-	DescriptionText     string
-	ActivityName        string
-	ActivityOrganizer   string
-	HasAttachments      bool
-	Attachments         []Attachment
-	Comments            []ApplicationComment
+	ID                     int
+	VenueID                int
+	ApplicantUID           string
+	ApplicationType        string
+	ApplicationStatus      string
+	TimeRequest            []ApplicationTimeRequest
+	EstimatedParticipants  *int
+	DescriptionText        string
+	ActivityName           string
+	ActivityOrganizer      string
+	HasAttachments         bool
+	Attachments            []Attachment
+	Comments               []ApplicationComment
 	ActivityCoordinatorRaw json.RawMessage
 }
 
@@ -37,25 +37,18 @@ type ApplicationTimeRequest struct {
 }
 
 type ApplicationComment struct {
-	ID          int
-	ApplicationID int
-	CommenterUID string
-	CommentText  string
+	ID             int
+	ApplicationID  int
+	CommenterUID   string
+	CommentText    string
 	HasAttachments bool
-	CommentTime  time.Time
-	Attachments  []Attachment
+	CommentTime    time.Time
+	Attachments    []Attachment
 }
 
-type ApprovalDecision string
-
-const (
-	ApprovalDecisionRejected ApprovalDecision = "rejected"
-	ApprovalDecisionApproved ApprovalDecision = "approved"
-)
-
 type ApplicationApproval struct {
-	ApplicationID   int
-	Decision        ApprovalDecision
-	Comment         *ApplicationComment
-	KnownConflicts  []int
+	ApplicationID  int
+	Decision       string
+	Comment        *ApplicationComment
+	KnownConflicts []int
 }

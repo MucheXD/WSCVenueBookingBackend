@@ -155,10 +155,13 @@ func handleServiceError(c *gin.Context, err error) {
 		apiException.AbortWithException(c, apiException.ApplicationNotFound, err)
 		return
 	}
+	if errors.Is(err, applicationSvc.ErrApplicationStatusInvalid) {
+		apiException.AbortWithException(c, apiException.ApplicationInapprovable, err)
+		return
+	}
 	if errors.Is(err, applicationSvc.ErrApplicationNoTimeRequest) ||
 		errors.Is(err, applicationSvc.ErrApplicationTimeRangeInvalid) ||
-		errors.Is(err, applicationSvc.ErrApplicationDecisionInvalid) ||
-		errors.Is(err, applicationSvc.ErrApplicationStatusInvalid) {
+		errors.Is(err, applicationSvc.ErrApplicationDecisionInvalid) {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}

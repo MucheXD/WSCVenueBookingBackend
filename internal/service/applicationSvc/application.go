@@ -62,9 +62,9 @@ func DeleteApplication(ctx context.Context, applicationID int) error {
 	return nil
 }
 
-func GetApplicationByID(ctx context.Context, applicationID int) (*models.Application, error) {
+func GetFullApplicationByID(ctx context.Context, applicationID int) (*models.Application, error) {
 	_ = ctx
-	application, err := repository.GetApplicationByID(applicationID)
+	application, err := repository.GetFullApplicationByID(applicationID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, ErrApplicationNotFound
@@ -74,10 +74,9 @@ func GetApplicationByID(ctx context.Context, applicationID int) (*models.Applica
 	return application, nil
 }
 
-// 获取申请单权限相关信息（创建用户、目标场地）的版本，供权限检查使用
-func GetApplicationPermRelatedByID(ctx context.Context, applicationID int) (*models.Application, error) {
+func GetApplicationBodyByID(ctx context.Context, applicationID int) (*models.Application, error) {
 	_ = ctx
-	application, err := repository.GetApplicationPermRelatedByID(applicationID)
+	application, err := repository.GetApplicationBodyByID(applicationID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, ErrApplicationNotFound
@@ -104,11 +103,13 @@ func ListUserApplications(ctx context.Context, applicantUID string) ([]models.Ap
 }
 
 func ReviewApplication(ctx context.Context, approval models.ApplicationApproval, reviewerUID string) (ApprovalResult, error) {
-	if approval.Decision != models.ApprovalDecisionApproved && approval.Decision != models.ApprovalDecisionRejected {
+
+	// 参数合法性检查，仅允许批准或拒绝两种决策
+	if approval.Decision != models.ApplicationStatusApproved && approval.Decision != models.ApplicationStatusRejected {
 		return ApprovalResult{}, ErrApplicationDecisionInvalid
 	}
 
-	application, err := repository.GetApplicationByID(approval.ApplicationID)
+	application, err := repository.GetApplicationBodyByID(approval.ApplicationID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return ApprovalResult{}, ErrApplicationNotFound
@@ -121,11 +122,13 @@ func ReviewApplication(ctx context.Context, approval models.ApplicationApproval,
 
 	comment := approval.Comment
 	if comment != nil {
+		comment.ID = 0 // 确保 Comment ID 在创建时由数据库自增生成
 		comment.ApplicationID = approval.ApplicationID
 		comment.CommenterUID = reviewerUID
 	}
 
-	if approval.Decision == models.ApprovalDecisionRejected {
+	// 处理拒绝申请单的情况：直接更新申请单状态并记录审批意见，无需检查冲突
+	if approval.Decision == models.ApplicationStatusRejected {
 		err = database.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 			if err := repository.UpdateApplicationStatusTx(tx, approval.ApplicationID, models.ApplicationStatusRejected); err != nil {
 				return err
@@ -144,6 +147,7 @@ func ReviewApplication(ctx context.Context, approval models.ApplicationApproval,
 		return ApprovalResult{}, nil
 	}
 
+	// 处理批准申请单的情况：首先检查是否存在新的冲突，如果存在则返回新冲突列表；如果不存在则更新申请单状态、自动拒绝冲突的申请单、记录审批意见
 	conflictIDs, err := repository.GetConflictingApplicationIDs(approval.ApplicationID,
 		[]string{models.ApplicationStatusRequested})
 	if err != nil {

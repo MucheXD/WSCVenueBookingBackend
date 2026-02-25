@@ -19,13 +19,13 @@ func ReviewApplicationHandler(c *gin.Context) {
 		return
 	}
 
-	application, err := applicationSvc.GetApplicationByID(c.Request.Context(), applicationID)
+	appliBody, err := applicationSvc.GetApplicationBodyByID(c.Request.Context(), applicationID)
 	if err != nil {
 		handleServiceError(c, err)
 		return
 	}
 
-	if !hasVenueApprovalPermission(vagid, sysPermMap, application.VenueID) {
+	if !hasVenueApprovalPermission(vagid, sysPermMap, appliBody.VenueID) {
 		apiException.AbortWithException(c, apiException.VenuePermNotSatisfied)
 		return
 	}
@@ -38,7 +38,7 @@ func ReviewApplicationHandler(c *gin.Context) {
 
 	approval := models.ApplicationApproval{
 		ApplicationID:  applicationID,
-		Decision:       models.ApprovalDecision(req.Decision),
+		Decision:       req.Decision,
 		KnownConflicts: req.KnownConflicts,
 	}
 	if req.Comment != nil {

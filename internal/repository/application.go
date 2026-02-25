@@ -122,7 +122,7 @@ func CreateApplicationCommentTx(tx *gorm.DB, comment *models.ApplicationComment)
 	return entity.ID, nil
 }
 
-func GetApplicationByID(applicationID int) (*models.Application, error) {
+func GetFullApplicationByID(applicationID int) (*models.Application, error) {
 	applications, err := queryApplications(database.DB.Where(&ApplicationEntity{ID: applicationID}))
 	if err != nil {
 		return nil, err
@@ -133,21 +133,29 @@ func GetApplicationByID(applicationID int) (*models.Application, error) {
 	return &applications[0], nil
 }
 
-// 获取申请单权限相关信息（创建用户、目标场地）的版本，供权限检查使用
-func GetApplicationPermRelatedByID(applicationID int) (*models.Application, error) {
+func GetApplicationBodyByID(applicationID int) (*models.Application, error) {
 	var entity ApplicationEntity
 	err := database.DB.
 		Model(&ApplicationEntity{}).
-		Select("id", "venue_id", "applicant_uid").
 		Where("id = ?", applicationID).
 		First(&entity).Error
 	if err != nil {
 		return nil, err
 	}
 	return &models.Application{
-		ID:           entity.ID,
-		VenueID:      entity.VenueID,
-		ApplicantUID: entity.ApplicantUID,
+		ID:                     entity.ID,
+		VenueID:                entity.VenueID,
+		ApplicantUID:           entity.ApplicantUID,
+		ApplicationStatus:      entity.ApplicationStatus,
+		TimeRequest:            []models.ApplicationTimeRequest{},
+		EstimatedParticipants:  entity.EstimatedParticipants,
+		DescriptionText:        entity.DescriptionText,
+		ActivityName:           entity.ActivityName,
+		ActivityOrganizer:      entity.ActivityOrganizer,
+		HasAttachments:         entity.HasAttachments,
+		Attachments:            []models.Attachment{},
+		Comments:               []models.ApplicationComment{},
+		ActivityCoordinatorRaw: entity.ActivityCoordinator,
 	}, nil
 }
 
@@ -212,16 +220,12 @@ func UpdateApplicationStatusesTx(tx *gorm.DB, applicationIDs []int, status strin
 	if len(applicationIDs) == 0 {
 		return nil
 	}
-	query := tx.Model(&ApplicationEntity{}).
-		Where("id IN ?", applicationIDs).
-		Update("application_status", status)
+	query := tx.Model(&ApplicationEntity{}).Where("id IN ?", applicationIDs)
+	// 动态注入额外条件
 	if len(currentStatuses) > 0 {
-		query = tx.Model(&ApplicationEntity{}).
-			Where("id IN ?", applicationIDs).
-			Where("application_status IN ?", currentStatuses).
-			Update("application_status", status)
+		query = query.Where("application_status IN ?", currentStatuses)
 	}
-	return query.Error
+	return query.Update("application_status", status).Error
 }
 
 // 获取冲突的申请单ID，使用高级数据库查询完成
