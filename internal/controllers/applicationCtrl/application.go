@@ -158,7 +158,7 @@ func handleServiceError(c *gin.Context, err error) {
 	if errors.Is(err, applicationSvc.ErrApplicationNoTimeRequest) ||
 		errors.Is(err, applicationSvc.ErrApplicationTimeRangeInvalid) ||
 		errors.Is(err, applicationSvc.ErrApplicationDecisionInvalid) ||
-		errors.Is(err, applicationSvc.ErrApplicationStatusInvalid) {
+	 	errors.Is(err, applicationSvc.ErrApplicationStatusInvalid) {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}

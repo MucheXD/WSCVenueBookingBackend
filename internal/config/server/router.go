@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/controllers/applicationCtrl"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/controllers/fileCtrl"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/controllers/notificationCtrl"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/controllers/userCtrl"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/controllers/venueCtrl"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/middlewares"
@@ -73,4 +74,21 @@ func initRouter() {
 	GinEngine.PUT("/api/application/:application_id",
 		middlewares.AuthMiddleware(),
 		applicationCtrl.ReviewApplicationHandler)
+
+	//站内信相关路由
+	GinEngine.POST("/api/notificationn",
+		middlewares.AuthMiddleware(),
+		notificationCtrl.CreateNotificationHandler)
+	GinEngine.DELETE("/api/notification/{notification_id}",
+		middlewares.AuthMiddleware(),
+		notificationCtrl.DeleteNotificationHandler)
+	GinEngine.GET("/api/notification",
+		middlewares.AuthMiddleware(),
+		notificationCtrl.ListNotificationHandler)
+	GinEngine.GET("/api/user/notification",
+		middlewares.AuthMiddleware(),
+		notificationCtrl.ListAdminNotificationsHandler)
+	GinEngine.PUT("/api/notification/{notification_id}",
+		middlewares.AuthMiddleware(),
+		notificationCtrl.UpdateNotificationHandler)
 }
