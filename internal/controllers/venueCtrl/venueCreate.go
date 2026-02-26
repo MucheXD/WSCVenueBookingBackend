@@ -1,6 +1,7 @@
 package venueCtrl
 
 import (
+	"encoding/json"
 	"errors"
 
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/config/database"
@@ -14,13 +15,14 @@ import (
 
 // CreateVenueForm 创建场地表单
 type CreateVenueForm struct {
-	Name            string   `json:"name" binding:"required"`
-	BuildingID      int      `json:"building_id" binding:"required"`
-	TypeID          int      `json:"type_id"`
-	Description     string   `json:"description"`
-	CoverImageToken string   `json:"cover_image_token"`
-	ImagesToken     []string `json:"images_token"`
-	Capacity        int      `json:"capacity"`
+	Name            string          `json:"name" binding:"required"`
+	BuildingID      int             `json:"building_id" binding:"required"`
+	TypeID          int             `json:"type_id"`
+	Description     string          `json:"description"`
+	CoverImageToken string          `json:"cover_image_token"`
+	Equipments      json.RawMessage `json:"equipments"`
+	ImagesToken     []string        `json:"images_token"`
+	Capacity        int             `json:"capacity"`
 }
 
 // CreateVenueHandler 创建新场地
@@ -39,6 +41,7 @@ func CreateVenueHandler(c *gin.Context) {
 		TypeID:          req.TypeID,
 		Description:     req.Description,
 		CoverImageToken: req.CoverImageToken,
+		EquipmentsRaw:   req.Equipments,
 		Capacity:        req.Capacity,
 	}
 
@@ -47,7 +50,8 @@ func CreateVenueHandler(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, venueSvc.ErrVenueNameRequired) ||
 			errors.Is(err, venueSvc.ErrVenueBuildingRequired) ||
-			errors.Is(err, venueSvc.ErrVenueBuildingInvalid) {
+			errors.Is(err, venueSvc.ErrVenueBuildingInvalid) ||
+			errors.Is(err, venueSvc.ErrVenueEquipmentsInvalid) {
 			apiException.AbortWithException(c, apiException.ParamError, err)
 			return
 		}

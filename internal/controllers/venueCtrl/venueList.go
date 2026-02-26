@@ -1,6 +1,7 @@
 package venueCtrl
 
 import (
+	"encoding/json"
 	"strconv"
 	"time"
 
@@ -21,6 +22,7 @@ type VenueDetailDTO struct {
 	DescriptionText string          `json:"description_text"`
 	CoverImageToken string          `json:"cover_image_token"`
 	Capacity        int             `json:"capacity"`
+	Equipments      any             `json:"equipments"`
 	Permissions     []string        `json:"permissions"`
 	Attachments     []AttachmentDTO `json:"attachments"`
 	Timetable       []TimeslotDTO   `json:"timetable"`
@@ -114,6 +116,7 @@ func ListVenuesHandler(c *gin.Context) {
 			DescriptionText: venue.Description,
 			CoverImageToken: venue.CoverImageToken,
 			Capacity:        venue.Capacity,
+			Equipments:      unmarshalVenueEquipments(venue.EquipmentsRaw),
 			Permissions:     getVenuePermissionStrings(vagid, venue.ID),
 			Attachments:     []AttachmentDTO{},
 			Timetable:       []TimeslotDTO{},
@@ -205,4 +208,15 @@ func getVenuePermissionStrings(vagid int, venueID int) []string {
 		permissions = append(permissions, "Edit")
 	}
 	return permissions
+}
+
+func unmarshalVenueEquipments(raw json.RawMessage) any {
+	if len(raw) == 0 {
+		return nil
+	}
+	var result any
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return nil
+	}
+	return result
 }

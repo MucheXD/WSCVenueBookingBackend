@@ -15,16 +15,30 @@ func initRouter() {
 	GinEngine.GET("/test", func(c *gin.Context) { c.String(200, "success") })
 
 	// 用户相关路由
+	// 获取登录盐值 - 无需认证
 	GinEngine.GET("/api/login-session-salt",
 		userCtrl.StartLoginSessionHandler)
+	// 用户登录 - 无需认证
 	GinEngine.POST("/api/login",
 		userCtrl.PasswordLoginHandler)
+	// 用户注册 - 无需认证
 	GinEngine.POST("/api/register",
 		userCtrl.UserRegisterHandler)
+	// 获取用户信息 - 需要登录
 	GinEngine.PUT("/api/user/profile", middlewares.AuthMiddleware(),
 		userCtrl.UpdateUserProfileHandler)
+	// 修改密码 - 需要登录
 	GinEngine.POST("/api/user/change-password", middlewares.AuthMiddleware(),
 		userCtrl.UserChangePwdHandler)
+	// (批量)修改用户系统权限 - 需要 ChangeUserPermission 系统权限
+	GinEngine.PUT("/api/user/system-permission", middlewares.AuthMiddleware(),
+		middlewares.CheckSystemPermission(systemPermission.ChangeUserPermission),
+		userCtrl.UpdateUserSysPermHandler)
+	// 获取系统权限列表 - 需要 ChangeUserPermission 系统权限
+	GinEngine.GET("/api/system-permission",
+		middlewares.AuthMiddleware(),
+		middlewares.CheckSystemPermission(systemPermission.ChangeUserPermission),
+		userCtrl.GetSystemPermissionListHandler)
 
 	// 文件相关路由
 	GinEngine.POST("/api/file",

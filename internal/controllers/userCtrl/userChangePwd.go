@@ -22,10 +22,6 @@ func UserChangePwdHandler(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
-	if !isValidPasswordHash(req.NewPwd) {
-		apiException.AbortWithException(c, apiException.PasswordOrSaltInvalid)
-		return
-	}
 	if req.VerifyType == "password" {
 		err := userSvc.ChangePasswordByOld(c.Request.Context(),
 			req.VerifyData, c.GetString("UserID"), req.NewPwd, req.NewPwdSalt)
