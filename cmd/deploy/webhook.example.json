@@ -1,19 +1,9 @@
 [
     {
-        "id": "redeploy",
+        "id": "redeploy-**KEY**",
         "execute-command": "/data/srv/backend/WSCVenueBookingBackend/cmd/deploy/redeploy.sh",
         "command-working-directory": "/data/srv/backend/WSCVenueBookingBackend/cmd/deploy",
         "response-message": "Success: Redeploy command triggered. Working in background.",
-        "capture-command-output": true,
-        "trigger-rule": {
-            "match": {
-                "type": "value",
-                "value": "***change key here***",
-                "parameter": {
-                    "from": "query",
-                    "name": "key"
-                }
-            }
-        }
+        "capture-command-output": true
     }
 ]

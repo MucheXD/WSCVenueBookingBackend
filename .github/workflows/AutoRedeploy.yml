@@ -1,0 +1,17 @@
+name: Auto Redeploy on Main
+
+on:
+  push:
+    branches:
+      - main  # 仅在 main 分支有提交时触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Webhook
+        run: |
+          curl -f -s -S -X POST "${{ secrets.AUTO_REDEPLOY_TRIGGER_URL }}" \
+          -o response.txt || (cat response.txt && exit 1)
+      - name: Show Result
+        run: cat response.txt
