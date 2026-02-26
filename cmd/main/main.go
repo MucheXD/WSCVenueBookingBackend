@@ -25,7 +25,13 @@ func main() {
 
 func consoleScanner() {
 	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Println("控制台指令输入已启用，输入 help 获取可用指令列表")
+	fileInfo, _ := os.Stdin.Stat()
+	if (fileInfo.Mode() & os.ModeCharDevice) == 0 {
+		fmt.Println("未检测到交互式终端，控制台监听已禁用")
+		return
+	} else {
+		fmt.Println("控制台指令输入已启用，输入 help 获取可用指令列表")
+	}
 
 	for scanner.Scan() {
 		input := strings.TrimSpace(scanner.Text())
