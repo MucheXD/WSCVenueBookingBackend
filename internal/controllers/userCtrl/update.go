@@ -10,13 +10,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type UserEditForm struct {
+type UserProfileUpdateDTO struct {
 	PhoneNumber string `json:"phone_number"`
 	Username    string `json:"username"`
 }
 
 func UpdateUserProfileHandler(c *gin.Context) {
-	var req UserEditForm
+	var req UserProfileUpdateDTO
 	if err := c.ShouldBindJSON(&req); err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return

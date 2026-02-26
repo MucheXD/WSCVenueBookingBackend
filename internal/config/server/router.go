@@ -25,6 +25,9 @@ func initRouter() {
 		userCtrl.UpdateUserProfileHandler)
 	GinEngine.POST("/api/user/change-password", middlewares.AuthMiddleware(),
 		userCtrl.UserChangePwdHandler)
+	GinEngine.PUT("/api/user/system-permission", middlewares.AuthMiddleware(),
+		middlewares.CheckSystemPermission(systemPermission.ChangeUserPermission),
+		userCtrl.UpdateUserSysPermHandler)
 
 	// 文件相关路由
 	GinEngine.POST("/api/file",

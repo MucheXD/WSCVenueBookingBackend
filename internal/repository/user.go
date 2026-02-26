@@ -111,6 +111,19 @@ func UpdateUser(modelU *models.User) error {
 	return nil
 }
 
+func BatchUpdateUsersPermMap(userIDs []string, permMap uint64) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	if err := database.DB.Model(&UserEntity{}).
+		Where("uid IN ?", userIDs).
+		Update("perm_map", permMap).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
 // Entity-Domain Conversion (Private Methods)
 
 func (u *UserEntity) fromDomain(modelU *models.User) {
