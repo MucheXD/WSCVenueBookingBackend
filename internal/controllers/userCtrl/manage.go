@@ -4,12 +4,19 @@ import (
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/service/userSvc"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/apiException"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/systemPermission"
 	"github.com/gin-gonic/gin"
 )
 
 type UpdateUserSysPermDTO struct {
-	UserID  []string `json:"uid" binding:"required"`
-	SysPerm int      `json:"system_permission" binding:"required"`
+	UserID  []string `json:"uids" binding:"required"`
+	SysPerm uint64   `json:"system_permission" binding:"required"`
+}
+
+// GetSystemPermissionListHandler 获取系统权限列表
+// 此函数的内容写死，不从数据库读取，因为系统权限是写死在代码里的
+func GetSystemPermissionListHandler(c *gin.Context) {
+	utils.SetSuccessJsonResponse(c, systemPermission.SystemPermissionDisplayList)
 }
 
 func UpdateUserSysPermHandler(c *gin.Context) {
@@ -19,7 +26,7 @@ func UpdateUserSysPermHandler(c *gin.Context) {
 		return
 	}
 
-	if len(req.UserID) == 0 || req.SysPerm < 0 {
+	if len(req.UserID) == 0 {
 		apiException.AbortWithException(c, apiException.ParamError)
 		return
 	}
@@ -36,5 +43,4 @@ func UpdateUserSysPermHandler(c *gin.Context) {
 	}
 
 	utils.SetSuccessJsonResponse(c, nil)
-
 }
