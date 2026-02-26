@@ -18,6 +18,7 @@ type VenueEntity struct {
 	Capacity        int            `gorm:"column:capacity"`
 	Description     string         `gorm:"column:description_text"`
 	CoverImageToken *string        `gorm:"column:cover_image_token"`
+	EquipmentsRaw   []byte         `gorm:"column:equipments"`
 	IsActive        bool           `gorm:"column:is_active"`
 	DeletedAt       gorm.DeletedAt `gorm:"column:delete_at"`
 }
@@ -319,6 +320,7 @@ func (v *VenueEntity) fromDomain(modelV *models.Venue) {
 	} else {
 		v.CoverImageToken = &modelV.CoverImageToken
 	}
+	v.EquipmentsRaw = modelV.EquipmentsRaw
 	v.IsActive = modelV.IsActive
 }
 
@@ -331,6 +333,7 @@ func (v *VenueEntity) toDomain() *models.Venue {
 		Capacity:        v.Capacity,
 		Description:     v.Description,
 		CoverImageToken: defaultImageIfEmpty(v.CoverImageToken),
+		EquipmentsRaw:   v.EquipmentsRaw,
 		IsActive:        v.IsActive,
 	}
 }
