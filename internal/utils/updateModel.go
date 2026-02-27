@@ -11,6 +11,14 @@ func UpdateField[T comparable](target *T, update T) {
 	}
 }
 
+// UpdateFieldPtr 如果 update 非 nil，则将其值覆盖到 target 中
+// 适用于区分“未传值”与“传零值”的更新场景
+func UpdateFieldPtr[T any](target *T, update *T) {
+	if update != nil {
+		*target = *update
+	}
+}
+
 // [谨慎使用] 可能引发潜在问题，建议使用 UpdateField 来更新单个字段
 // UpdateModel 将 src 结构体中非零值的字段覆盖到 dest 结构体中
 // 操作粒度为一层，不进行递归查询

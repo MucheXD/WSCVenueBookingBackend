@@ -48,6 +48,22 @@ func GetVenueByID(venueID int) (*models.Venue, error) {
 	return venueEntity.toDomain(), nil
 }
 
+func ListVenueBodies() ([]*models.Venue, error) {
+	var venueEntities []VenueEntity
+	if err := database.DB.
+		Model(&VenueEntity{}).
+		Order("venue_id ASC").
+		Find(&venueEntities).Error; err != nil {
+		return nil, err
+	}
+
+	venues := make([]*models.Venue, 0, len(venueEntities))
+	for _, entity := range venueEntities {
+		venues = append(venues, entity.toDomain())
+	}
+	return venues, nil
+}
+
 // VenueExists 检查场地是否存在
 func VenueExists(venueID int) (bool, error) {
 	var count int64

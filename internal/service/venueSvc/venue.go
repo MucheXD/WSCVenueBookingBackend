@@ -101,6 +101,11 @@ type VenueListOptions struct {
 
 // ListVenues 列出场地
 func ListVenues(ctx context.Context, opts VenueListOptions) ([]*models.Venue, error) {
+	return ListFullVenues(ctx, opts)
+}
+
+// ListFullVenues 列出完整场地列表（供含附件/时段等后续查询的链路使用）
+func ListFullVenues(ctx context.Context, opts VenueListOptions) ([]*models.Venue, error) {
 	// 设置默认分页大小
 	if opts.Limit == 0 {
 		opts.Limit = 12
@@ -121,6 +126,16 @@ func ListVenues(ctx context.Context, opts VenueListOptions) ([]*models.Venue, er
 		return nil, fmt.Errorf("%w: %w", ErrVenueQueryInDB, err)
 	}
 
+	return venues, nil
+}
+
+// ListVenueBodies 列出轻量场地信息（不附带附件、时间表等额外查询）
+func ListVenueBodies(ctx context.Context) ([]*models.Venue, error) {
+	_ = ctx
+	venues, err := repository.ListVenueBodies()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrVenueQueryInDB, err)
+	}
 	return venues, nil
 }
 
