@@ -20,6 +20,7 @@ var (
 	ChangePwdFailed         = NewException(http.StatusUnauthorized, 201007, "旧密码错误")
 	SysPermNotSatisfied     = NewException(http.StatusForbidden, 201008, "系统权限不足")
 	VenuePermNotSatisfied   = NewException(http.StatusForbidden, 201009, "场地权限不足")
+	UserNotFound            = NewException(http.StatusOK, 201010, "用户不存在")
 	ApplicationNotFound     = NewException(http.StatusNotFound, 202001, "申请单不存在")
 	ApplicationInapprovable = NewException(http.StatusBadRequest, 202002, "该申请单不可审批")
 )
