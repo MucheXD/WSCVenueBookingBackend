@@ -7,8 +7,8 @@ func toNotificationModel(req createNotificationForm) (models.Notification, error
 	return models.Notification{
 		Title: req.Title,
 		Content: req.Content,
-		RecevierUID: req.RecevierUID,
 		ReleaseTime: req.ReleaseTime,
+		RecevierUID: req.RecevierUID,
 		Status: req.Status,
 		Attachments:            toAttachmentModelList(req.Attachments),
 	}, nil
@@ -18,12 +18,12 @@ func toUpdateNotificationModel(req updateNotificationForm) (models.Notification,
 	return models.Notification{
 		Title: req.Title,
 		Content: req.Content,
-		RecevierUID: req.RecevierUID,
 		ReleaseTime: req.ReleaseTime,
 		Status: req.Status,
 		Attachments:            toAttachmentModelList(req.Attachments),
 	}, nil
 }
+
 
 // 申请单模型 -> 申请单传出
 func toNotificationResponseList(notifications []models.Notification) []notificationResponseDTO {
@@ -47,7 +47,6 @@ func toAdminNotificationResponseList(notifications []models.Notification) []admi
 	for _, notification := range notifications {
 		result = append(result, adminNotificationResponseDTO{
 			NotificationID:        notification.ID,
-			RecevierUID: notification.RecevierUID,
 			Title: notification.Title,
 			Content: notification.Content,
 			Status: notification.Status,

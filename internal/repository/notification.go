@@ -1,33 +1,37 @@
 package repository
 
 import (
+	"encoding/json"
+
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/config/database"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
 	"gorm.io/gorm"
 )
 
-type NotificationEntity struct {
-	NotificationID          int    `gorm:"column:notification_id;primaryKey"`
+type NotificationContentEntity struct {
+	ID          int    `gorm:"column:id;primaryKey"`
+	Type          int `gorm:"column:type"`
 	Title string    `gorm:"column:title"`
 	Content string    `gorm:"column:content"`
 	SenderUID string `gorm:"column:sender_uid"`
-	RecevierUID     string    `gorm:"column:recevier_uid"`
+	Payload json.RawMessage `gorm:"column:pay_load"`
 	Status     int    `gorm:"column:status"`
 	ReleaseTime      string    `gorm:"column:release_time"`
 }
 
-func (NotificationEntity) TableName() string {
-	return "notifications"
+type NotificationTargetEntity struct{
+	ID int `gorm:"column:id;primaryKey"`
+	NotificationID int `gorm:"notification_id"`
+	RecevierUID string `gorm:"recevier_uid"`
+	IsRead bool `gorm:"is_read"`
+	Type          int `gorm:"column:type"`
 }
-
-
-
-func CreateNotificationTx(tx *gorm.DB, notification *models.Notification) (int, error) {
-	entity := NotificationEntity{
-		NotificationID: notification.ID,
+func CreateNotificationContentTx(tx *gorm.DB, notification *models.Notification) (int, error) {
+	entity := NotificationContentEntity{
+		Type: notification.Type,
 		Title: notification.Title,
 		Content: notification.Content,
-		RecevierUID: notification.RecevierUID,
+		Payload: notification.Payload,
 		SenderUID: notification.SenderUID,
 		Status: notification.Status,
 		ReleaseTime: notification.ReleaseTime,
@@ -42,67 +46,117 @@ func CreateNotificationTx(tx *gorm.DB, notification *models.Notification) (int, 
 			attachment.Index = idx
 			attachments = append(attachments, attachment)
 		}
-		if err := CreateAttachmentsTx(tx, AttachmentBizTypeNotification, entity.NotificationID, attachments); err != nil {
+		if err := CreateAttachmentsTx(tx, AttachmentBizTypeNotification, entity.ID, attachments); err != nil {
 			return 0, err
 		}
 	}
 
-	return entity.NotificationID, nil
+	return entity.ID, nil
+}
+
+func CreateNotificationTargetTx(tx *gorm.DB, notification *models.Notification) error {
+	entity := NotificationTargetEntity{
+		NotificationID: notification.ID,
+		RecevierUID: notification.RecevierUID,
+		IsRead: false,
+		Type:notification.Type,
+	}
+	if err := tx.Create(&entity).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func SoftDeleteNotificationsTx(tx *gorm.DB, notificationID int) error {
 	if err := SoftDeleteBizAttachmentsTx(tx, AttachmentBizTypeNotification, []int{notificationID}); err != nil {
 		return err
 	}
+	err:=tx.Model(&NotificationTargetEntity{}).
+		Where(&NotificationTargetEntity{NotificationID: notificationID}).
+		Delete(&NotificationTargetEntity{}).Error
+	if err!=nil{
+		return err
+	}
 
-	return tx.Model(&NotificationEntity{}).
-		Where(&NotificationEntity{NotificationID: notificationID}).
-		Delete(&NotificationEntity{}).Error
+	return tx.Model(&NotificationContentEntity{}).
+		Where(&NotificationContentEntity{ID: notificationID}).
+		Delete(&NotificationContentEntity{}).Error
 }
 
 func GetNotificationByID(notificationID int) (*models.Notification, error) {
-	notifications, err := queryNotifications(database.DB.Where(&NotificationEntity{NotificationID: notificationID}))
-	if err != nil {
+	var appEntities []NotificationContentEntity
+
+	if err := database.DB.Model(&NotificationContentEntity{}).
+		Where(&NotificationContentEntity{ID: notificationID}).
+		Find(&appEntities).Error; err != nil {
 		return nil, err
 	}
-	if len(notifications) == 0 {
-		return nil, gorm.ErrRecordNotFound
+	if len(appEntities) == 0 {
+		return &models.Notification{}, nil
 	}
-	return &notifications[0], nil
+	notificationContent:=appEntities[0]
+
+	var appAttachmentEntities []AttachmentEntity
+	if err := database.DB.
+		Model(&AttachmentEntity{}).
+		Where("biz_id = ?", notificationContent.ID).
+		Find(&appAttachmentEntities).Error; err != nil {
+		return nil, err
+	}
+	
+	attachmentSlice:=make([]models.Attachment,len(appAttachmentEntities))
+	for _,appAttachmentEntity:=range appAttachmentEntities{
+		attachmentSlice=append(attachmentSlice, appAttachmentEntity.toDomain())
+
+	}
+
+	notification:= models.Notification{
+		ID:                     notificationContent.ID,
+		SenderUID:                notificationContent.SenderUID,
+		Title:        notificationContent.Title,
+		Content:      notificationContent.Content,
+		Status:       notificationContent.Status,
+		ReleaseTime:  notificationContent.ReleaseTime,
+		Attachments:            attachmentSlice,
+	}
+	
+	return &notification, nil
 }
 
 func UpdateNotification(notification *models.Notification) error {
-	entity := NotificationEntity{
-		NotificationID: notification.ID,
+	entity := NotificationContentEntity{
+		ID: notification.ID,
 		Title: notification.Title,
 		Content: notification.Content,
-		RecevierUID: notification.RecevierUID,
 		SenderUID: notification.SenderUID,
 		Status: notification.Status,
 		ReleaseTime: notification.ReleaseTime,
 	}
-	if err := database.DB.Model(&NotificationEntity{}).
-		Where(&NotificationEntity{NotificationID: entity.NotificationID}).
+	if err := database.DB.Model(&NotificationContentEntity{}).
+		Where(&NotificationContentEntity{ID:notification.ID}).
 		Updates(&entity).Error; err != nil {
 		return err
 	}
 	return nil
 }
-
-func ListNotifications(userID string) ([]models.Notification, error) {
-	return queryNotifications(database.DB.Where("status=?",1).Where(&NotificationEntity{RecevierUID:userID},).Or("recevier_uid IS NULL",))
+func GetUnreadSystemNotificationsByUserID(tx *gorm.DB,userID string)([]int,error){
+	var notificationIDs []int
+	if err := tx.Model(&NotificationContentEntity{}).
+    	Where("type = ?", 1).
+    	Where("NOT EXISTS (SELECT 1 FROM notification_target_entity WHERE notification_target_entity.notification_id = notification_content_entity.id AND notification_target_entity.recevier = ?)", userID).
+    	Pluck("id", &notificationIDs).Error; err != nil {
+    	return notificationIDs,err
+	}
+	return notificationIDs,nil
 }
 
-func ListAdminNotifications(userID string) ([]models.Notification, error) {
-	return queryNotifications(database.DB.Where(&NotificationEntity{SenderUID: userID}))
-}
+func ListNotifications(tx *gorm.DB,userID string) ([]models.Notification, error) {
+	var appEntities []NotificationTargetEntity
 
-func queryNotifications(scope *gorm.DB) ([]models.Notification, error) {
-	var appEntities []NotificationEntity
-
-	if err := scope.
-		Model(&NotificationEntity{}).
-		Order("id DESC").
+	if err := tx.Model(&NotificationTargetEntity{}).
+		Where(&NotificationTargetEntity{RecevierUID: userID}).
+		Order("notification_id DESC").
 		Find(&appEntities).Error; err != nil {
 		return nil, err
 	}
@@ -113,6 +167,74 @@ func queryNotifications(scope *gorm.DB) ([]models.Notification, error) {
 	appIDs := make([]int, 0, len(appEntities))
 	for _, app := range appEntities {
 		appIDs = append(appIDs, app.NotificationID)
+	}
+
+	var NotificationContentEntities []NotificationContentEntity
+	if err := tx.
+		Model(&NotificationContentEntity{}).
+		Where("id IN ?", appIDs).
+		Find(&NotificationContentEntities).Error; err != nil {
+		return nil, err
+	}
+
+	var appAttachmentEntities []AttachmentEntity
+	if err := tx.
+		Model(&AttachmentEntity{}).
+		Where("biz_type = ?", AttachmentBizTypeApplication).
+		Where("biz_id IN ?", appIDs).
+		Order("biz_id ASC, biz_index ASC").
+		Find(&appAttachmentEntities).Error; err != nil {
+		return nil, err
+	}
+	appAttachmentMap := make(map[int][]models.Attachment)
+	for _, attachment := range appAttachmentEntities {
+		appAttachmentMap[attachment.BizID] = append(appAttachmentMap[attachment.BizID], attachment.toDomain())
+	}
+
+	notifications := make([]models.Notification, 0, len(appEntities))
+	for _, entity := range NotificationContentEntities {
+		notifications = append(notifications, models.Notification{
+			ID:                     entity.ID,
+			SenderUID:               entity.SenderUID ,
+			RecevierUID:           userID,
+			Title:        entity.Title,
+			Content:      entity.Content,
+			Status:       entity.Status,
+			ReleaseTime:   entity.ReleaseTime,
+			Attachments:            appAttachmentMap[entity.ID],
+		})
+	}
+	return notifications, nil
+}
+
+func MarkRead(tx *gorm.DB, UserID string)error{
+	err:=tx.Model(&NotificationContentEntity{}).
+		Where("is_read=",false).
+		Update("is_read",true).Error
+	if err!=nil{
+		return err
+	}
+	return nil
+}
+
+func ListAdminNotifications(userID string) ([]models.Notification, error) {
+	var appEntities []NotificationContentEntity
+
+	if err := database.DB.Model(&NotificationContentEntity{}).
+		Where(&NotificationContentEntity{SenderUID: userID}).
+		Where(&NotificationContentEntity{Type: 1}).
+		Order("CASE WHEN status=3 THEN 0 WHEN status=2 THEN 1 WHEN status=1 THEN 2 ELSE 3 END ").
+		Order("id DESC").
+		Find(&appEntities).Error; err != nil {
+		return nil, err
+	}
+	if len(appEntities) == 0 {
+		return []models.Notification{}, nil
+	}
+
+	appIDs := make([]int, 0, len(appEntities))
+	for _, app := range appEntities {
+		appIDs = append(appIDs, app.ID)
 	}
 
 	var appAttachmentEntities []AttachmentEntity
@@ -132,15 +254,46 @@ func queryNotifications(scope *gorm.DB) ([]models.Notification, error) {
 	notifications := make([]models.Notification, 0, len(appEntities))
 	for _, entity := range appEntities {
 		notifications = append(notifications, models.Notification{
-			ID:                     entity.NotificationID,
+			ID:                     entity.ID,
 			SenderUID:                entity.SenderUID,
-			RecevierUID:           entity.RecevierUID,
+			RecevierUID:           "",
 			Title:        entity.Title,
 			Content:      entity.Content,
 			Status:       entity.Status,
 			ReleaseTime:   entity.ReleaseTime,
-			Attachments:            appAttachmentMap[entity.NotificationID],
+			Attachments:            appAttachmentMap[entity.ID],
 		})
 	}
 	return notifications, nil
+}
+
+func HasUnreadNotification(userID string)(bool,error){
+	var count int64
+	err:=database.DB.Model(&NotificationTargetEntity{}).
+	Where(&NotificationTargetEntity{IsRead:false}).
+	Where(&NotificationTargetEntity{RecevierUID: userID}).
+	Count(&count).Error
+	if err!=nil{
+		return false,err
+	}
+	if count>0{
+		return true,err
+	}
+	var count1 int64
+	database.DB.Model(&NotificationContentEntity{}).
+	Where(&NotificationContentEntity{Type:1}).
+	Where(&NotificationContentEntity{Status:1}).
+	Count(&count1)
+
+	var count2 int64
+	database.DB.Model(&NotificationTargetEntity{}).
+	Where(&NotificationTargetEntity{Type:1}).
+	Where(&NotificationTargetEntity{RecevierUID:userID}).
+	Count(&count2)
+
+	if count1 > count2 {
+    	return true,nil
+	} 
+	return false,nil
+
 }

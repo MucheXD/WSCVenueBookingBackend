@@ -10,7 +10,7 @@ import (
 
 func ScheduleRelease() {
 	now := time.Now()
-	result := database.DB.Model(&repository.NotificationEntity{}).Where("status=? AND release_time<=?", 2, now).Update("status", 1)
+	result := database.DB.Model(&repository.NotificationContentEntity{}).Where("status=? AND release_time<=?", 2, now).Update("status", 1)
 	err := result.Error
 	if err != nil {
 		log.Printf("Error upload notifications: %v\n", err)

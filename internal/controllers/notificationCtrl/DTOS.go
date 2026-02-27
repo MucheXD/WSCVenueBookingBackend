@@ -19,7 +19,6 @@ type createNotificationForm struct {
 }
 
 type updateNotificationForm struct {
-	RecevierUID string   `json:"recevier_uid"`
 	Title       string   `json:"title"`
 	Content     string   `json:"content"`
 	Attachments []attachmentDTO `json:"attachments"`
@@ -38,7 +37,6 @@ type notificationResponseDTO struct {
 
 type adminNotificationResponseDTO struct {
 	NotificationID int `json:"notification_id"`
-	RecevierUID string `json:"recevier_uid"`
 	Title string `json:"title"`
 	Content string `json:"content"`
 	Attachments []attachmentDTO `json:"attachments"`

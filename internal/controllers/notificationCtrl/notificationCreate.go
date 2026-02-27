@@ -24,6 +24,11 @@ func CreateNotificationHandler(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
+	if notification.RecevierUID==""{
+		notification.Type=1
+	}else{
+		notification.Type=2
+	}
 
 	notificationID, err := notificationSvc.CreateNotification(c.Request.Context(),notification,userID)
 	if err != nil {

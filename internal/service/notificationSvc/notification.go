@@ -20,22 +20,28 @@ func CreateNotification(ctx context.Context, notification models.Notification,se
 	}
 
 	notification.SenderUID=senderUID
-	
+
 	var createdID int
 	err := database.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		id, err := repository.CreateNotificationTx(tx, &notification)
+		id, err := repository.CreateNotificationContentTx(tx, &notification)
 		if err != nil {
 			return err
 		}
 		createdID = id
+		if notification.Type==2{
+			notification.ID=createdID
+			err := repository.CreateNotificationTargetTx(tx, &notification)
+			if err != nil {
+				return err
+			}
+		}
 		return nil
-	})
+	})	
 	if err != nil {
 		return 0, fmt.Errorf("%w: %w", ErrNotificationCreateInDB, err)
 	}
 
 	return createdID, nil
-
 }
 
 func DeleteNotification(ctx context.Context, notificationID int) error {
@@ -67,7 +73,6 @@ func UpdateNotification(ctx context.Context, updates *models.Notification,notifi
 	// 应用更新（只更新非零值字段）
 	utils.UpdateField(&existingNotification.Content, updates.Content)
 	utils.UpdateField(&existingNotification.Title, updates.Title)
-	utils.UpdateField(&existingNotification.RecevierUID, updates.RecevierUID)
 	utils.UpdateField(&existingNotification.ReleaseTime, updates.ReleaseTime)
 	utils.UpdateField(&existingNotification.Status, updates.Status)
 
@@ -80,10 +85,45 @@ func UpdateNotification(ctx context.Context, updates *models.Notification,notifi
 }
 
 func ListNotifications(ctx context.Context, userID string) ([]models.Notification, error) {
-	notifications, err := repository.ListNotifications(userID)
+	var notifications []models.Notification
+	err := database.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		notificationIDs,err:=repository.GetUnreadSystemNotificationsByUserID(tx,userID)
+		if err!=nil{
+			return err
+		}
+		var notificationTargets []models.Notification
+		for _, notificationID := range notificationIDs {
+    		notificationTargets = append(notificationTargets, models.Notification{
+				ID:notificationID,
+        		RecevierUID: userID,
+        		Type:1,
+    		})
+		}
+
+		if len(notificationTargets) > 0 {
+    		for _,notificationTarget:=range notificationTargets{
+				err:=repository.CreateNotificationTargetTx(tx,&notificationTarget)
+				if err!=nil{
+					return err
+				}
+			}
+		}
+
+		notifications, err = repository.ListNotifications(tx,userID)
+		if err != nil {
+			return err
+		}
+		
+		err=repository.MarkRead(tx,userID)
+		if err != nil {
+			return err
+		}
+		
+		return nil
+	})
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrNotificationQueryInDB, err)
-	}
+			return nil, fmt.Errorf("%w: %w", ErrNotificationQueryInDB, err)
+		}
 	return notifications, nil
 }
 
@@ -94,3 +134,12 @@ func ListAdminNotifications(ctx context.Context, userID string) ([]models.Notifi
 	}
 	return notifications, nil
 }
+
+func HasUnreadNotification(ctx context.Context, userID string)(bool,error){
+	hasUnread,err:=repository.HasUnreadNotification(userID)
+	if err != nil {
+		return false, err
+	}
+	return hasUnread,nil
+}
+

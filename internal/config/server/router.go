@@ -88,6 +88,9 @@ func initRouter() {
 	GinEngine.GET("/api/user/notification",
 		middlewares.AuthMiddleware(),
 		notificationCtrl.ListAdminNotificationsHandler)
+	GinEngine.GET("/api/notification/read",
+		middlewares.AuthMiddleware(),
+		notificationCtrl.HasUnreadNotificationHandler)
 	GinEngine.PUT("/api/notification/{notification_id}",
 		middlewares.AuthMiddleware(),
 		notificationCtrl.UpdateNotificationHandler)
