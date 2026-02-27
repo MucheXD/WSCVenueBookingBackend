@@ -1,6 +1,11 @@
 package notificationCtrl
 
-import "github.com/MucheXD/WSCVenueBookingBackend/internal/models"
+import (
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/apiException"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/systemPermission"
+	"github.com/gin-gonic/gin"
+)
 
 // 传入申请单 -> 申请单模型
 func toNotificationModel(req createNotificationForm) (models.Notification, error) {
@@ -8,7 +13,7 @@ func toNotificationModel(req createNotificationForm) (models.Notification, error
 		Title: req.Title,
 		Content: req.Content,
 		ReleaseTime: req.ReleaseTime,
-		RecevierUID: req.RecevierUID,
+		ReceiverUID: req.ReceiverUID,
 		Status: req.Status,
 		Attachments:            toAttachmentModelList(req.Attachments),
 	}, nil
@@ -90,4 +95,42 @@ func toAttachmentDTOList(values []models.Attachment) []attachmentDTO {
 		})
 	}
 	return result
+}
+
+func getPermissionContext(c *gin.Context) (int, uint64, bool) {
+	vagidVal, exists := c.Get("VenueAccessGroupID")
+	if !exists {
+		apiException.AbortWithException(c, apiException.AuthInvalid)
+		return 0, 0, false
+	}
+	vagid, ok := vagidVal.(int)
+	if !ok {
+		apiException.AbortWithException(c, apiException.AuthInvalid)
+		return 0, 0, false
+	}
+
+	sysPermVal, exists := c.Get("SysPermissionMap")
+	if !exists {
+		apiException.AbortWithException(c, apiException.AuthInvalid)
+		return 0, 0, false
+	}
+	sysPermMap, ok := sysPermVal.(uint64)
+	if !ok {
+		apiException.AbortWithException(c, apiException.AuthInvalid)
+		return 0, 0, false
+	}
+	return vagid, sysPermMap, true
+}
+
+func hasNotificationPermission( sysPermMap uint64) bool {
+	if systemPermission.Check(sysPermMap, systemPermission.SendSystemAnnouncement) {
+		return true
+	}
+	if systemPermission.Check(sysPermMap, systemPermission.SendUserNotification) {
+		return true
+	}
+	if systemPermission.Check(sysPermMap, systemPermission.ChangeUserPermission) {
+		return true
+	}
+	return systemPermission.Check(sysPermMap, systemPermission.AllowAll)
 }

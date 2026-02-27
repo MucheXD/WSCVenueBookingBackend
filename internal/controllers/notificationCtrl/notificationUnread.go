@@ -7,12 +7,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func HasUnreadNotificationHandler(c *gin.Context) {
+func GetUnreadNotificationsNumHandler(c *gin.Context) {
 	userID := c.GetString("UserID")
-	hasUnread, err := notificationSvc.HasUnreadNotification(c.Request.Context(), userID)
+	num, err := notificationSvc.GetUnreadNotification(c.Request.Context(), userID)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
-	utils.SetSuccessJsonResponse(c, hasUnread)
+	utils.SetSuccessJsonResponse(c, num)
 }

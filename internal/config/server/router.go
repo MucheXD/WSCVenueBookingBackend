@@ -16,14 +16,37 @@ func initRouter() {
 	GinEngine.GET("/test", func(c *gin.Context) { c.String(200, "success") })
 
 	// 用户相关路由
-	GinEngine.GET("/api/get-login-session-salt",
+	// 获取登录盐值 - 无需认证
+	GinEngine.GET("/api/login-session-salt",
 		userCtrl.StartLoginSessionHandler)
+	// 用户登录 - 无需认证
 	GinEngine.POST("/api/login",
 		userCtrl.PasswordLoginHandler)
+	// 用户注册 - 无需认证
 	GinEngine.POST("/api/register",
 		userCtrl.UserRegisterHandler)
-	GinEngine.PATCH("/api/user/edit-profile", middlewares.AuthMiddleware(),
-		userCtrl.UpdateUserProfileHandler)
+	// 修改自身信息 - 需要登录
+	GinEngine.PUT("/api/user/profile", middlewares.AuthMiddleware(),
+		userCtrl.UpdateSelfProfileHandler)
+	// 获取自身信息 - 需要登录
+	GinEngine.GET("/api/user/profile", middlewares.AuthMiddleware(),
+		userCtrl.GetSelfProfileHandler)
+	// 获取用户信息 - 需要 UserManagement 系统权限
+	GinEngine.GET("/api/user/profile/:uid", middlewares.AuthMiddleware(),
+		middlewares.CheckSystemPermission(systemPermission.UserManagement),
+		userCtrl.GetUserProfileHandler)
+	// 修改密码 - 需要登录
+	GinEngine.POST("/api/user/change-password", middlewares.AuthMiddleware(),
+		userCtrl.UserChangePwdHandler)
+	// (批量)修改用户系统权限 - 需要 ChangeUserPermission 系统权限
+	GinEngine.PUT("/api/user/system-permission", middlewares.AuthMiddleware(),
+		middlewares.CheckSystemPermission(systemPermission.ChangeUserPermission),
+		userCtrl.UpdateUserSysPermHandler)
+	// 获取系统权限列表 - 需要 ChangeUserPermission 系统权限
+	GinEngine.GET("/api/system-permission",
+		middlewares.AuthMiddleware(),
+		middlewares.CheckSystemPermission(systemPermission.ChangeUserPermission),
+		userCtrl.GetSystemPermissionListHandler)
 
 	// 文件相关路由
 	GinEngine.POST("/api/file",
@@ -76,10 +99,10 @@ func initRouter() {
 		applicationCtrl.ReviewApplicationHandler)
 
 	//站内信相关路由
-	GinEngine.POST("/api/notificationn",
+	GinEngine.POST("/api/notification",
 		middlewares.AuthMiddleware(),
 		notificationCtrl.CreateNotificationHandler)
-	GinEngine.DELETE("/api/notification/{notification_id}",
+	GinEngine.DELETE("/api/notification/:notification_id",
 		middlewares.AuthMiddleware(),
 		notificationCtrl.DeleteNotificationHandler)
 	GinEngine.GET("/api/notification",
@@ -87,11 +110,11 @@ func initRouter() {
 		notificationCtrl.ListNotificationHandler)
 	GinEngine.GET("/api/user/notification",
 		middlewares.AuthMiddleware(),
-		notificationCtrl.ListAdminNotificationsHandler)
-	GinEngine.GET("/api/notification/read",
+		notificationCtrl.ListSendedNotificationsHandler)
+	GinEngine.GET("/api/notification/unread",
 		middlewares.AuthMiddleware(),
-		notificationCtrl.HasUnreadNotificationHandler)
-	GinEngine.PUT("/api/notification/{notification_id}",
+		notificationCtrl.GetUnreadNotificationsNumHandler)
+	GinEngine.PUT("/api/notification/:notification_id",
 		middlewares.AuthMiddleware(),
 		notificationCtrl.UpdateNotificationHandler)
 }

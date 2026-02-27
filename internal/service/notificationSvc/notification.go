@@ -95,7 +95,7 @@ func ListNotifications(ctx context.Context, userID string) ([]models.Notificatio
 		for _, notificationID := range notificationIDs {
     		notificationTargets = append(notificationTargets, models.Notification{
 				ID:notificationID,
-        		RecevierUID: userID,
+        		ReceiverUID: userID,
         		Type:1,
     		})
 		}
@@ -127,19 +127,19 @@ func ListNotifications(ctx context.Context, userID string) ([]models.Notificatio
 	return notifications, nil
 }
 
-func ListAdminNotifications(ctx context.Context, userID string) ([]models.Notification, error) {
-	notifications, err := repository.ListAdminNotifications(userID)
+func ListSendedNotifications(ctx context.Context, userID string) ([]models.Notification, error) {
+	notifications, err := repository.ListSendedNotifications(userID)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrNotificationQueryInDB, err)
 	}
 	return notifications, nil
 }
 
-func HasUnreadNotification(ctx context.Context, userID string)(bool,error){
-	hasUnread,err:=repository.HasUnreadNotification(userID)
+func GetUnreadNotification(ctx context.Context, userID string)(int,error){
+	unreadNum,err:=repository.GetUnreadNotificationsNum(userID)
 	if err != nil {
-		return false, err
+		return -1, err
 	}
-	return hasUnread,nil
+	return unreadNum,nil
 }
 

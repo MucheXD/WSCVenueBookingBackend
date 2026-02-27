@@ -11,7 +11,7 @@ type Notification struct {
 	Title       string
 	Content     string
 	SenderUID   string
-	RecevierUID string
+	ReceiverUID string
 	Payload     json.RawMessage
 	Attachments []Attachment
 	Status      int

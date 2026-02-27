@@ -10,7 +10,7 @@ type attachmentDTO struct {
 }
 
 type createNotificationForm struct {
-	RecevierUID string          `json:"recevier_uid"`
+	ReceiverUID string          `json:"receiver_uid"`
 	Title       string          `json:"title"`
 	Content     string          `json:"content"`
 	Attachments []attachmentDTO `json:"attachments"`

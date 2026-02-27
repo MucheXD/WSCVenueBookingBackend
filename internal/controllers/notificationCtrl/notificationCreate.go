@@ -13,6 +13,16 @@ import (
 func CreateNotificationHandler(c *gin.Context) {
 	userID:=c.GetString("UserID")
 
+	_, sysPermMap, ok := getPermissionContext(c)
+	if !ok {
+		return
+	}
+
+	if !hasNotificationPermission(sysPermMap) {
+		apiException.AbortWithException(c, apiException.SysPermNotSatisfied)
+		return
+	}
+
 	var req createNotificationForm
 	if err := c.ShouldBindJSON(&req); err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
@@ -24,7 +34,7 @@ func CreateNotificationHandler(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
-	if notification.RecevierUID==""{
+	if notification.ReceiverUID==""{
 		notification.Type=1
 	}else{
 		notification.Type=2

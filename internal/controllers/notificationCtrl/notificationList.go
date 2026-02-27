@@ -21,9 +21,20 @@ func ListNotificationHandler(c *gin.Context) {
 	
 	
 
-func ListAdminNotificationsHandler(c *gin.Context) {
+func ListSendedNotificationsHandler(c *gin.Context) {
 	userID := c.GetString("UserID")
-	notifications, err := notificationSvc.ListAdminNotifications(c.Request.Context(), userID)
+
+	_, sysPermMap, ok := getPermissionContext(c)
+	if !ok {
+		return
+	}
+
+	if !hasNotificationPermission(sysPermMap) {
+		apiException.AbortWithException(c, apiException.SysPermNotSatisfied)
+		return
+	}
+
+	notifications, err := notificationSvc.ListSendedNotifications(c.Request.Context(), userID)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return

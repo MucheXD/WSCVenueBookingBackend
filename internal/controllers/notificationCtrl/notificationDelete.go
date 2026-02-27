@@ -18,6 +18,16 @@ func DeleteNotificationHandler(c *gin.Context) {
 		return
 	}
 
+	_, sysPermMap, ok := getPermissionContext(c)
+	if !ok {
+		return
+	}
+
+	if !hasNotificationPermission(sysPermMap) {
+		apiException.AbortWithException(c, apiException.SysPermNotSatisfied)
+		return
+	}
+
 	err = notificationSvc.DeleteNotification(c.Request.Context(),notificationID)
 	if err != nil {
 		if errors.Is(err, notificationSvc.ErrNotificationNotFound) {

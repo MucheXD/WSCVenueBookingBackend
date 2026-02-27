@@ -16,6 +16,16 @@ import (
 
 
 func UpdateNotificationHandler(c *gin.Context) {
+	_, sysPermMap, ok := getPermissionContext(c)
+	if !ok {
+		return
+	}
+
+	if !hasNotificationPermission(sysPermMap) {
+		apiException.AbortWithException(c, apiException.SysPermNotSatisfied)
+		return
+	}
+	
 	notificationIDStr := c.Param("notification_id")
 	notificationID, err := strconv.Atoi(notificationIDStr)
 	if err != nil {
