@@ -12,11 +12,20 @@ func Check(permMap uint64, required SystemPermission) bool {
 	return (permMap & uint64(required)) != 0
 }
 
-func Satisfy(permMap uint64, required ...SystemPermission) bool {
+func SatisfyAny(permMap uint64, required ...SystemPermission) bool {
 	for _, req := range required {
 		if (permMap & uint64(req)) != 0 {
 			return true
 		}
 	}
 	return false
+}
+
+func SatisfyAll(permMap uint64, required ...SystemPermission) bool {
+	for _, req := range required {
+		if (permMap & uint64(req)) == 0 {
+			return false
+		}
+	}
+	return true
 }

@@ -1,0 +1,7 @@
+.git
+vendor/
+*.test
+*.exe
+.vscode
+configs/secret/
+docker-compose.yml

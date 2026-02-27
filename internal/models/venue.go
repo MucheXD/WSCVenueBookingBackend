@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 type Venue struct {
 	ID              int
@@ -10,6 +13,7 @@ type Venue struct {
 	Capacity        int
 	Description     string
 	CoverImageToken string
+	EquipmentsRaw   json.RawMessage
 	IsActive        bool
 }
 

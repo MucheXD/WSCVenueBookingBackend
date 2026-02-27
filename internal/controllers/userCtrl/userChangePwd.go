@@ -10,20 +10,16 @@ import (
 )
 
 type UserChangePwdForm struct {
-	VerifyType string `form:"verify_type" binding:"required"`
-	VerifyData string `form:"verify_data" binding:"required"`
-	NewPwd     string `form:"new_password" binding:"required"`
-	NewPwdSalt string `form:"new_salt" binding:"required"`
+	VerifyType string `json:"verify_type" binding:"required"`
+	VerifyData string `json:"verify_data" binding:"required"`
+	NewPwd     string `json:"new_password" binding:"required"`
+	NewPwdSalt string `json:"new_salt" binding:"required"`
 }
 
 func UserChangePwdHandler(c *gin.Context) {
 	var req UserChangePwdForm
 	if err := c.ShouldBindJSON(&req); err != nil {
 		apiException.AbortWithException(c, apiException.ParamError, err)
-		return
-	}
-	if !isValidPasswordHash(req.NewPwd) {
-		apiException.AbortWithException(c, apiException.PasswordOrSaltInvalid)
 		return
 	}
 	if req.VerifyType == "password" {

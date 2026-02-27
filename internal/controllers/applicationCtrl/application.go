@@ -152,13 +152,17 @@ func getPermissionContext(c *gin.Context) (int, uint64, bool) {
 // 统一负责转换 Service 层错误与 apiException
 func handleServiceError(c *gin.Context, err error) {
 	if errors.Is(err, applicationSvc.ErrApplicationNotFound) {
-		apiException.AbortWithException(c, apiException.NotFound, err)
+		apiException.AbortWithException(c, apiException.ApplicationNotFound, err)
+		return
+	}
+	if errors.Is(err, applicationSvc.ErrApplicationStatusInvalid) {
+		apiException.AbortWithException(c, apiException.ApplicationInapprovable, err)
 		return
 	}
 	if errors.Is(err, applicationSvc.ErrApplicationNoTimeRequest) ||
 		errors.Is(err, applicationSvc.ErrApplicationTimeRangeInvalid) ||
 		errors.Is(err, applicationSvc.ErrApplicationDecisionInvalid) ||
-	 	errors.Is(err, applicationSvc.ErrApplicationStatusInvalid) {
+		errors.Is(err, applicationSvc.ErrApplicationStatusInvalid) {
 		apiException.AbortWithException(c, apiException.ParamError, err)
 		return
 	}
@@ -182,14 +186,14 @@ func hasVenueApprovalPermission(vagid int, sysPermMap uint64, venueID int) bool 
 }
 
 // 检查是否满足删除申请单条件，规则为申请人本人或具有权限 Manage/AllVenueManage。
-func canDeleteApplication(requesterUID string, vagid int, sysPermMap uint64, application models.Application) bool {
-	if requesterUID == application.ApplicantUID {
+func canDeleteApplication(requesterUID string, vagid int, sysPermMap uint64, applicantUID string, venueID int) bool {
+	if requesterUID == applicantUID {
 		return true
 	}
 	if systemPermission.Check(sysPermMap, systemPermission.AllVenueManage) {
 		return true
 	}
-	return venuePermission.CheckVenuePermission(vagid, application.VenueID, venuePermission.Manage)
+	return venuePermission.CheckVenuePermission(vagid, venueID, venuePermission.Manage)
 }
 
 // 预留处理函数

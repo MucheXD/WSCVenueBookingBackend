@@ -3,6 +3,7 @@ package userSvc
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -13,6 +14,21 @@ import (
 )
 
 func RegisterUser(ctx context.Context, user *models.User) (*models.User, error) {
+	// 校验前端传入的数据是否合法，避免不必要的数据库查询和潜在的安全风险
+	// 这里的校验规则可以根据实际需求进行调整
+	if !isValidUsername(user.Username) {
+		return nil, fmt.Errorf("%w: username invalid", ErrRegisterInfoInvalid)
+	}
+	if !isValidSchoolID(user.SchoolID) {
+		return nil, fmt.Errorf("%w: school ID invalid", ErrRegisterInfoInvalid)
+	}
+	if !isValidPasswordHash(user.PasswordHash) {
+		return nil, fmt.Errorf("%w: password hash invalid", ErrRegisterInfoInvalid)
+	}
+	if !isValidPasswordSalt(user.PasswordSalt) {
+		return nil, fmt.Errorf("%w: password salt invalid", ErrRegisterInfoInvalid)
+	}
+
 	// 用户名去重
 	usrnameExist, err := repository.IsUsernameExists(user.Username)
 	if err != nil {
@@ -69,4 +85,36 @@ func convert10To32Inverse(n int64, alphabet string) string {
 		n = n / 32
 	}
 	return string(result)
+}
+
+// 预编译正则表达式以提高性能
+// ^[a-zA-Z0-9_]+$ 表示只允许字母、数字和下划线
+var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
+
+// IsValidUsername 校验用户名是否合法
+// 规则：4-20个字符，仅限英文字母、数字和下划线，不含特殊符号
+func isValidUsername(username string) bool {
+	length := len(username)
+	if length < 4 || length > 20 {
+		return false
+	}
+	return usernameRegex.MatchString(username)
+}
+
+// 这里可以根据实际需求定义学校ID的格式规则
+// 必须是数字，长度为12位
+var schoolIDRegex = regexp.MustCompile(`^\d{12}$`)
+
+func isValidSchoolID(schoolID string) bool {
+	return schoolIDRegex.MatchString(schoolID)
+}
+
+var passwordHashRegex = regexp.MustCompile(`^[a-fA-F0-9]{64}$`)
+var passwordSaltRegex = regexp.MustCompile(`^[a-zA-Z0-9]{16}$`)
+
+func isValidPasswordHash(passwordHash string) bool {
+	return passwordHashRegex.MatchString(passwordHash)
+}
+func isValidPasswordSalt(passwordSalt string) bool {
+	return passwordSaltRegex.MatchString(passwordSalt)
 }

@@ -1,6 +1,7 @@
 package venueCtrl
 
 import (
+	"encoding/json"
 	"errors"
 	"strconv"
 
@@ -16,13 +17,14 @@ import (
 
 // UpdateVenueForm 更新场地表单（所有字段可选）
 type UpdateVenueForm struct {
-	Name            string   `json:"name"`
-	BuildingID      int      `json:"building_id"`
-	TypeID          int      `json:"type_id"`
-	Description     string   `json:"description"`
-	CoverImageToken string   `json:"cover_image_token"`
-	ImagesToken     []string `json:"images_token"`
-	Capacity        int      `json:"capacity"`
+	Name            string           `json:"name"`
+	BuildingID      int              `json:"building_id"`
+	TypeID          int              `json:"type_id"`
+	Description     string           `json:"description"`
+	CoverImageToken string           `json:"cover_image_token"`
+	Equipments      *json.RawMessage `json:"equipments"`
+	ImagesToken     []string         `json:"images_token"`
+	Capacity        int              `json:"capacity"`
 }
 
 // UpdateVenueHandler 更新场地信息
@@ -59,6 +61,9 @@ func UpdateVenueHandler(c *gin.Context) {
 		CoverImageToken: req.CoverImageToken,
 		Capacity:        req.Capacity,
 	}
+	if req.Equipments != nil {
+		updates.EquipmentsRaw = *req.Equipments
+	}
 
 	// 调用服务层更新场地
 	err = venueSvc.UpdateVenue(c.Request.Context(), updates)
@@ -68,6 +73,10 @@ func UpdateVenueHandler(c *gin.Context) {
 			return
 		}
 		if errors.Is(err, venueSvc.ErrVenueBuildingInvalid) {
+			apiException.AbortWithException(c, apiException.ParamError, err)
+			return
+		}
+		if errors.Is(err, venueSvc.ErrVenueEquipmentsInvalid) {
 			apiException.AbortWithException(c, apiException.ParamError, err)
 			return
 		}

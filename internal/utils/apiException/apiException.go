@@ -27,11 +27,11 @@ func AbortWithException(c *gin.Context, apiException *Exception, traceErrs ...er
 	if apiException == nil {
 		apiException = ServerError
 	}
-	_ = c.Error(apiException)       // 首异常为包装后的业务异常
 	for _, err := range traceErrs { // 记录调用链上的其他错误(若有)
 		if err != nil {
 			_ = c.Error(err)
 		}
 	}
+	_ = c.Error(apiException) // 尾随异常为包装后的业务异常
 	c.Abort()
 }

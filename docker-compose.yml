@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # MySQL 服务
+  sqlsrv:
+    image: mysql:latest
+    container_name: sqlsrv
+    restart: always
+    ports:
+      - "${DB_PORT}:3306"
+    volumes:
+      - "${DB_DATA_PATH}:/var/lib/mysql"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_ROOT_HOST: "%"
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+
+  # Redis 服务
+  redissrv:
+    image: redis:latest
+    container_name: redissrv
+    restart: always
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - "${REDIS_DATA_PATH}:/data"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    command: redis-server --appendonly yes --requirepass "${REDIS_PASSWORD}"
+
+  # 后端服务
+  app:
+    build:
+      context: .
+    container_name: backendsrv
+    restart: always
+    ports:
+      - "${APP_PORT}:8080"
+    depends_on:
+      - sqlsrv
+      - redissrv
+    deploy:
+      resources:
+        limits:
+          memory: 256M

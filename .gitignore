@@ -12,6 +12,7 @@ dist/
 
 # Test binary, built with `go test -c`
 *.test
+test/storage
 
 # Code coverage profiles and other test artifacts
 *.out
@@ -36,3 +37,4 @@ go.work.sum
 # secret files
 configs/secret/
 configs/config.yml
+configs/config.yml.prod

@@ -22,7 +22,7 @@ func CheckSystemPermission(required ...systemPermission.SystemPermission) gin.Ha
 				apiException.SysPermNotSatisfied, errors.New("用户系统权限信息格式错误"))
 			return
 		}
-		if !systemPermission.Satisfy(permMap, required...) {
+		if !systemPermission.SatisfyAll(permMap, required...) {
 			apiException.AbortWithException(c,
 				apiException.SysPermNotSatisfied)
 			return

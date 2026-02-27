@@ -19,6 +19,11 @@ func CreateVenue(ctx context.Context, venue *models.Venue) (int, error) {
 	if venue.BuildingID == 0 {
 		return 0, ErrVenueBuildingRequired
 	}
+	normalizedEquipments, err := normalizeVenueEquipments(venue.EquipmentsRaw)
+	if err != nil {
+		return 0, err
+	}
+	venue.EquipmentsRaw = normalizedEquipments
 
 	// 创建时默认设置为启用状态
 	venue.IsActive = true
@@ -39,6 +44,12 @@ func UpdateVenue(ctx context.Context, updates *models.Venue) error {
 		return err
 	}
 
+	normalizedEquipments, err := normalizeVenueEquipments(updates.EquipmentsRaw)
+	if err != nil {
+		return err
+	}
+	updates.EquipmentsRaw = normalizedEquipments
+
 	// 应用更新（只更新非零值字段）
 	utils.UpdateField(&existingVenue.Name, updates.Name)
 	utils.UpdateField(&existingVenue.BuildingID, updates.BuildingID)
@@ -46,6 +57,9 @@ func UpdateVenue(ctx context.Context, updates *models.Venue) error {
 	utils.UpdateField(&existingVenue.Capacity, updates.Capacity)
 	utils.UpdateField(&existingVenue.Description, updates.Description)
 	utils.UpdateField(&existingVenue.CoverImageToken, updates.CoverImageToken)
+	if len(updates.EquipmentsRaw) > 0 {
+		existingVenue.EquipmentsRaw = updates.EquipmentsRaw
+	}
 
 	// 如果更新了楼区ID，校验其是否存在
 	if updates.BuildingID != 0 {
@@ -82,6 +96,7 @@ type VenueListOptions struct {
 	Offset      int
 	Limit       int
 	VAGID       int
+	SysPerm     uint64
 }
 
 // ListVenues 列出场地
@@ -100,6 +115,7 @@ func ListVenues(ctx context.Context, opts VenueListOptions) ([]*models.Venue, er
 		Offset:      opts.Offset,
 		Limit:       opts.Limit,
 		VAGID:       opts.VAGID,
+		SysPerm:     opts.SysPerm,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrVenueQueryInDB, err)
@@ -109,12 +125,12 @@ func ListVenues(ctx context.Context, opts VenueListOptions) ([]*models.Venue, er
 }
 
 // GetAccessibleBuildingsAndCampuses 根据权限组获取可访问的楼区和校区信息
-func GetAccessibleBuildingsAndCampuses(ctx context.Context, vagid int) ([]*models.VenueBuilding, []*models.VenueCampus, error) {
-	buildings, err := repository.GetAccessibleBuildingList(vagid)
+func GetAccessibleBuildingsAndCampuses(ctx context.Context, vagid int, allowAll bool) ([]*models.VenueBuilding, []*models.VenueCampus, error) {
+	buildings, err := repository.GetAccessibleBuildingList(vagid, allowAll)
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %w", ErrBuildingQueryInDB, err)
 	}
-	campuses, err := repository.GetAccessibleCampusList(vagid)
+	campuses, err := repository.GetAccessibleCampusList(vagid, allowAll)
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %w", ErrCampusQueryInDB, err)
 	}

@@ -30,6 +30,7 @@ func (AttachmentEntity) TableName() string {
 	return "attachments"
 }
 
+// TODO: 需要增加批量方法避免 N+1 数据库查询
 func GetAttachmentsByBiz(bizType, bizID int) ([]models.Attachment, error) {
 	var attachmentEntities []AttachmentEntity
 	txDB := database.DB.

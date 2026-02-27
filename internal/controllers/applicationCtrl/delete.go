@@ -18,13 +18,13 @@ func DeleteApplicationHandler(c *gin.Context) {
 		return
 	}
 
-	application, err := applicationSvc.GetApplicationByID(c.Request.Context(), applicationID)
+	application, err := applicationSvc.GetApplicationBodyByID(c.Request.Context(), applicationID)
 	if err != nil {
 		handleServiceError(c, err)
 		return
 	}
 
-	if !canDeleteApplication(requesterUID, vagid, sysPermMap, *application) {
+	if !canDeleteApplication(requesterUID, vagid, sysPermMap, application.ApplicantUID, application.VenueID) {
 		apiException.AbortWithException(c, apiException.VenuePermNotSatisfied)
 		return
 	}

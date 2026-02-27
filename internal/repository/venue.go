@@ -5,6 +5,7 @@ import (
 
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/config/database"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/systemPermission"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/venuePermission"
 	"gorm.io/gorm"
 )
@@ -16,7 +17,8 @@ type VenueEntity struct {
 	TypeID          int            `gorm:"column:type_id"`
 	Capacity        int            `gorm:"column:capacity"`
 	Description     string         `gorm:"column:description_text"`
-	CoverImageToken string         `gorm:"column:cover_image_token"`
+	CoverImageToken *string        `gorm:"column:cover_image_token"`
+	EquipmentsRaw   []byte         `gorm:"column:equipments"`
 	IsActive        bool           `gorm:"column:is_active"`
 	DeletedAt       gorm.DeletedAt `gorm:"column:delete_at"`
 }
@@ -91,6 +93,7 @@ type VenueQueryOptions struct {
 	Offset      int                         // 分页偏移
 	Limit       int                         // 单页大小
 	VAGID       int                         // 用户的权限组ID
+	SysPerm     uint64                      // 用户的系统权限
 }
 
 // ListVenuesWithQuery 列出满足权限条件的场地
@@ -107,26 +110,56 @@ func ListVenuesWithQuery(opts VenueQueryOptions) ([]*models.Venue, error) {
 	// LIMIT ? OFFSET ?
 
 	query := database.DB.Model(&VenueEntity{}).
-		Distinct("venues.*").
-		Joins("INNER JOIN venue_accesses va ON venues.venue_id = va.venue_id").
-		Where("va.vagid = ?", opts.VAGID)
+		Distinct("venues.*")
 
-	// 权限筛选
-	if len(opts.Permissions) > 0 {
-		permConditions := database.DB.Where("1 = 0") // 初始化为false
+	hasAllReserve := systemPermission.SatisfyAny(opts.SysPerm, systemPermission.AllVenueReservation)
+	hasAllApproval := systemPermission.SatisfyAny(opts.SysPerm, systemPermission.AllVenueApproval)
+	hasAllManage := systemPermission.SatisfyAny(opts.SysPerm, systemPermission.AllVenueManage)
+	hasAllEdit := systemPermission.SatisfyAny(opts.SysPerm, systemPermission.AllVenueEdit)
+	hasAnyAllVenuePerm := hasAllReserve || hasAllApproval || hasAllManage || hasAllEdit
+
+	// 权限筛选：
+	// 1) 无权限筛选器时：若无任意AllVenue...系统权限，则按venue_accesses + vagid限制；有则可列出全部。
+	// 2) 有权限筛选器时：对应AllVenue...系统权限可直接满足；其余权限需通过venue_accesses + vagid限制。
+	if len(opts.Permissions) == 0 {
+		if !hasAnyAllVenuePerm {
+			query = query.Joins("INNER JOIN venue_accesses va ON venues.venue_id = va.venue_id")
+			query = query.Where("va.vagid = ?", opts.VAGID)
+		}
+	} else {
+		permConditions := database.DB.Where("1 = 0")
+		needVenueAccessFilter := false
+
 		for _, perm := range opts.Permissions {
 			switch perm {
 			case venuePermission.Reserve:
-				permConditions = permConditions.Or("va.allow_reserve = ?", true)
+				if !hasAllReserve {
+					permConditions = permConditions.Or("va.allow_reserve = ?", true)
+					needVenueAccessFilter = true
+				}
 			case venuePermission.Approval:
-				permConditions = permConditions.Or("va.allow_approval = ?", true)
+				if !hasAllApproval {
+					permConditions = permConditions.Or("va.allow_approval = ?", true)
+					needVenueAccessFilter = true
+				}
 			case venuePermission.Manage:
-				permConditions = permConditions.Or("va.allow_manage = ?", true)
+				if !hasAllManage {
+					permConditions = permConditions.Or("va.allow_manage = ?", true)
+					needVenueAccessFilter = true
+				}
 			case venuePermission.Edit:
-				permConditions = permConditions.Or("va.allow_edit = ?", true)
+				if !hasAllEdit {
+					permConditions = permConditions.Or("va.allow_edit = ?", true)
+					needVenueAccessFilter = true
+				}
 			}
 		}
-		query = query.Where(permConditions)
+
+		if needVenueAccessFilter {
+			query = query.Joins("INNER JOIN venue_accesses va ON venues.venue_id = va.venue_id")
+			query = query.Where("va.vagid = ?", opts.VAGID)
+			query = query.Where(permConditions)
+		}
 	}
 
 	// 楼区筛选
@@ -180,8 +213,8 @@ func GetVenueIDsByVAGID(vagid int) ([]int, error) {
 	return venueIDs, nil
 }
 
-// 联表查询权限组可访问的楼区信息
-func GetAccessibleBuildingList(vagid int) ([]*models.VenueBuilding, error) {
+// 联表查询可访问的楼区信息
+func GetAccessibleBuildingList(vagid int, allowAll bool) ([]*models.VenueBuilding, error) {
 	var buildingEntities []VenueBuildingEntity
 
 	// SQL设计：使用JOIN联表查询满足“条件A”的 venue_buildings 条目
@@ -191,13 +224,17 @@ func GetAccessibleBuildingList(vagid int) ([]*models.VenueBuilding, error) {
 	// 条件C：该 venue_accesses 条目满足 vagid = ? 的条件
 	// 每个条目全部满足条件任意次数后，只返回一次
 
-	err := database.DB.
-		Table("venue_buildings b").
-		Select("DISTINCT b.building_id, b.building_name, b.location_campus_id").
-		Joins("INNER JOIN venues v ON b.building_id = v.location_building_id").
-		Joins("INNER JOIN venue_accesses va ON v.venue_id = va.venue_id").
-		Where("va.vagid = ?", vagid).
-		Scan(&buildingEntities).Error
+	query := database.DB.Table("venue_buildings b")
+
+	if !allowAll {
+		query = query.
+			Select("DISTINCT b.building_id, b.building_name, b.location_campus_id").
+			Joins("INNER JOIN venues v ON b.building_id = v.location_building_id").
+			Joins("INNER JOIN venue_accesses va ON v.venue_id = va.venue_id").
+			Where("va.vagid = ?", vagid)
+	}
+
+	err := query.Scan(&buildingEntities).Error
 	if err != nil {
 		return nil, err
 	}
@@ -208,8 +245,8 @@ func GetAccessibleBuildingList(vagid int) ([]*models.VenueBuilding, error) {
 	return buildings, nil
 }
 
-// 联表查询权限组可访问的校区信息
-func GetAccessibleCampusList(vagid int) ([]*models.VenueCampus, error) {
+// 联表查询可访问的校区信息
+func GetAccessibleCampusList(vagid int, allowAll bool) ([]*models.VenueCampus, error) {
 	var campusEntities []VenueCampusEntity
 
 	// SQL设计：使用JOIN联表查询满足“条件A”的 venue_campuses 条目
@@ -220,14 +257,18 @@ func GetAccessibleCampusList(vagid int) ([]*models.VenueCampus, error) {
 	// 条件D：该 venue_accesses 条目满足 vagid = ? 的条件
 	// 每个条目全部满足条件任意次数后，只返回一次
 
-	err := database.DB.
-		Table("venue_campuses c").
-		Select("DISTINCT c.campus_id, c.campus_name").
-		Joins("INNER JOIN venue_buildings b ON c.campus_id = b.location_campus_id").
-		Joins("INNER JOIN venues v ON b.building_id = v.location_building_id").
-		Joins("INNER JOIN venue_accesses va ON v.venue_id = va.venue_id").
-		Where("va.vagid = ?", vagid).
-		Scan(&campusEntities).Error
+	query := database.DB.Table("venue_campuses c")
+
+	if !allowAll {
+		query = query.
+			Select("DISTINCT c.campus_id, c.campus_name").
+			Joins("INNER JOIN venue_buildings b ON c.campus_id = b.location_campus_id").
+			Joins("INNER JOIN venues v ON b.building_id = v.location_building_id").
+			Joins("INNER JOIN venue_accesses va ON v.venue_id = va.venue_id").
+			Where("va.vagid = ?", vagid)
+	}
+
+	err := query.Scan(&campusEntities).Error
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +315,12 @@ func (v *VenueEntity) fromDomain(modelV *models.Venue) {
 	v.TypeID = modelV.TypeID
 	v.Capacity = modelV.Capacity
 	v.Description = modelV.Description
-	v.CoverImageToken = modelV.CoverImageToken
+	if modelV.CoverImageToken == "" {
+		v.CoverImageToken = nil
+	} else {
+		v.CoverImageToken = &modelV.CoverImageToken
+	}
+	v.EquipmentsRaw = modelV.EquipmentsRaw
 	v.IsActive = modelV.IsActive
 }
 
@@ -286,7 +332,15 @@ func (v *VenueEntity) toDomain() *models.Venue {
 		TypeID:          v.TypeID,
 		Capacity:        v.Capacity,
 		Description:     v.Description,
-		CoverImageToken: v.CoverImageToken,
+		CoverImageToken: defaultImageIfEmpty(v.CoverImageToken),
+		EquipmentsRaw:   v.EquipmentsRaw,
 		IsActive:        v.IsActive,
 	}
+}
+
+func defaultImageIfEmpty(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }

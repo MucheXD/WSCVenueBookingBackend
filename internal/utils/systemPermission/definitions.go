@@ -1,5 +1,7 @@
 package systemPermission
 
+import "github.com/gin-gonic/gin"
+
 type SystemPermission uint64
 
 var (
@@ -31,3 +33,61 @@ var (
 		SendUserNotification
 	PermTypeOperator = AllowAll
 )
+
+var SystemPermissionDisplayList = []gin.H{
+	{
+		"display_name": "基本权限",
+		"detail":       "具有此权限的用户可以登录系统，查看和修改自己的个人信息等",
+		"bit":          0,
+	},
+	{
+		"display_name": "新建场地",
+		"detail":       "具有此权限的用户可以创建新的场地",
+		"bit":          1,
+	},
+	{
+		"display_name": "访问与申请所有场地",
+		"detail":       "具有此权限的用户可以访问系统内的所有场地，并且对所有场地具有申请权限（无视场地权限表）",
+		"bit":          2,
+	},
+	{
+		"display_name": "审批所有场地下属申请单",
+		"detail":       "具有此权限的用户可以审批系统内所有场地的申请单（无视场地权限表）",
+		"bit":          3,
+	},
+	{
+		"display_name": "管理所有场地",
+		"detail":       "具有此权限的用户可以管理系统内的所有场地，包括发布场地公告、创建维护等（无视场地权限表）",
+		"bit":          4,
+	},
+	{
+		"display_name": "编辑所有场地",
+		"detail":       "具有此权限的用户可以编辑系统内的所有场地，包括更改标题、关键属性、删除等（无视场地权限表）",
+		"bit":          5,
+	},
+	{
+		"display_name": "修改用户的场地权限",
+		"detail":       "具有此权限的用户可以修改系统内所有用户的场地权限（因可自提权，等同具有所有场地权限）",
+		"bit":          6,
+	},
+	{
+		"display_name": "用户管理",
+		"detail":       "具有此权限的用户可以进行用户管理操作，包括用户信息的增删改查",
+		"bit":          7,
+	},
+	{
+		"display_name": "发送系统通知",
+		"detail":       "具有此权限的用户可以向所有用户发送系统通知",
+		"bit":          8,
+	},
+	{
+		"display_name": "发送对单用户通知",
+		"detail":       "具有此权限的用户可以向一个或多个用户发送站内信",
+		"bit":          9,
+	},
+	{
+		"display_name": "修改用户权限",
+		"detail":       "具有此权限的用户可以修改系统内所有用户的权限（因可自提权，等同最高权限）",
+		"bit":          62,
+	},
+}

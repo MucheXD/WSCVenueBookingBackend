@@ -61,6 +61,9 @@ func ChangePasswordByOld(ctx context.Context, verifyToken string, uid string, ne
 	if !isValid {
 		return ErrUserNotVerified
 	}
+	if !isValidPasswordHash(newPwd) || !isValidPasswordSalt(newSalt) {
+		return ErrNewPasswordOrSaltInvalid
+	}
 	user.PasswordHash = newPwd
 	user.PasswordSalt = newSalt
 	err = repository.UpdateUser(user)

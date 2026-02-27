@@ -7,6 +7,7 @@ type User struct {
 	PasswordHash string
 	PasswordSalt string
 	RegisterTime time.Time
+	UpdatedAt    time.Time
 	Username     string
 	SchoolID     string
 	PhoneNumber  string

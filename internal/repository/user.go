@@ -14,6 +14,7 @@ type UserEntity struct {
 	PasswordHash string    `gorm:"column:password_hash"`
 	PasswordSalt string    `gorm:"column:password_salt"`
 	RegisteredAt time.Time `gorm:"column:registered_at"`
+	UpdatedAt    time.Time `gorm:"column:updated_at"`
 	Username     string    `gorm:"column:username"`
 	SchoolID     string    `gorm:"column:school_id"`
 	PhoneNumber  string    `gorm:"column:phone_number"`
@@ -111,6 +112,19 @@ func UpdateUser(modelU *models.User) error {
 	return nil
 }
 
+func BatchUpdateUsersPermMap(userIDs []string, permMap uint64) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	if err := database.DB.Model(&UserEntity{}).
+		Where("uid IN ?", userIDs).
+		Update("perm_map", permMap).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
 // Entity-Domain Conversion (Private Methods)
 
 func (u *UserEntity) fromDomain(modelU *models.User) {
@@ -118,6 +132,7 @@ func (u *UserEntity) fromDomain(modelU *models.User) {
 	u.PasswordHash = modelU.PasswordHash
 	u.PasswordSalt = modelU.PasswordSalt
 	u.RegisteredAt = modelU.RegisterTime
+	u.UpdatedAt = modelU.UpdatedAt
 	u.Username = modelU.Username
 	u.SchoolID = modelU.SchoolID
 	u.PhoneNumber = modelU.PhoneNumber
@@ -132,6 +147,7 @@ func (u *UserEntity) toDomain() *models.User {
 		PasswordHash: u.PasswordHash,
 		PasswordSalt: u.PasswordSalt,
 		RegisterTime: u.RegisteredAt,
+		UpdatedAt:    u.UpdatedAt,
 		Username:     u.Username,
 		SchoolID:     u.SchoolID,
 		PhoneNumber:  u.PhoneNumber,
