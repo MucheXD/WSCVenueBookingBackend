@@ -24,9 +24,12 @@ func initRouter() {
 	// 用户注册 - 无需认证
 	GinEngine.POST("/api/register",
 		userCtrl.UserRegisterHandler)
-	// 获取用户信息 - 需要登录
+	// 修改用户信息 - 需要登录
 	GinEngine.PUT("/api/user/profile", middlewares.AuthMiddleware(),
 		userCtrl.UpdateUserProfileHandler)
+	// 获取用户信息 - 需要登录
+	GinEngine.GET("/api/user/profile", middlewares.AuthMiddleware(),
+		userCtrl.GetUserProfileHandler)
 	// 修改密码 - 需要登录
 	GinEngine.POST("/api/user/change-password", middlewares.AuthMiddleware(),
 		userCtrl.UserChangePwdHandler)

@@ -2,12 +2,14 @@ package userSvc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/repository"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils"
+	"gorm.io/gorm"
 )
 
 // 使用传入模型更新既有用户模型，若传入字段非零值则更新对应字段
@@ -29,6 +31,19 @@ func UpdateUser(c context.Context, userID string, update models.User) error {
 		return fmt.Errorf("%w:%w", ErrUpdateUserInDB, err)
 	}
 	return nil
+}
+
+// GetUserProfile returns user profile fields by user ID.
+func GetUserProfile(c context.Context, userID string) (*models.User, error) {
+	_ = c
+	user, err := repository.GetUserByID(userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserNotFound
+		}
+		return nil, fmt.Errorf("%w: %w", ErrQueryUserInDB, err)
+	}
+	return user, nil
 }
 
 func BatchUpdateUsersSystemPermission(c context.Context, userIDs []string, permMap uint64) error {
