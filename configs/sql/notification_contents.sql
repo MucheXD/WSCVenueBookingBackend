@@ -8,7 +8,7 @@ CREATE TABLE notification_contents (
     content TEXT COMMENT 'Body content of the notification',
     status INT NOT NULL DEFAULT '0' COMMENT 'Form of the notification',
     payload JSON COMMENT 'Additional data for the notification in JSON format',
-    release_time VARCHAR(255) NOT NULL COMMENT 'Release time of the notification',
+    release_time TIMESTAMP NOT NULL COMMENT 'Release time of the notification',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation timestamp of the notification',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp of the notification',
     deleted_at TIMESTAMP NULL COMMENT '(RepoLayerOnly) Soft delete timestamp'

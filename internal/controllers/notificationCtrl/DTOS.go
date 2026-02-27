@@ -1,5 +1,6 @@
 package notificationCtrl
 
+import "time"
 
 type attachmentDTO struct {
 	Index     int    `json:"index"`
@@ -8,39 +9,37 @@ type attachmentDTO struct {
 	FileName  string `json:"file_name"`
 }
 
-
 type createNotificationForm struct {
-	RecevierUID string `json:"recevier_uid"`
-	Title string `json:"title"`
-	Content string `json:"content"`
+	RecevierUID string          `json:"recevier_uid"`
+	Title       string          `json:"title"`
+	Content     string          `json:"content"`
 	Attachments []attachmentDTO `json:"attachments"`
-	Status int `json:"status"`
-	ReleaseTime string `json:"release_time"`
+	Status      int             `json:"status"`
+	ReleaseTime time.Time          `json:"release_time"`
 }
 
 type updateNotificationForm struct {
-	Title       string   `json:"title"`
-	Content     string   `json:"content"`
+	Title       string          `json:"title"`
+	Content     string          `json:"content"`
 	Attachments []attachmentDTO `json:"attachments"`
-	Status      int      `json:"status"`
-	ReleaseTime string   `json:"release_time"`
+	Status      int             `json:"status"`
+	ReleaseTime time.Time          `json:"release_time"`
 }
 
 type notificationResponseDTO struct {
-	NotificationID int `json:"notification_id"`
-	SenderUID string `json:"sender_uid"`
-	Title string `json:"title"`
-	Content string `json:"content"`
-	Attachments []attachmentDTO `json:"attachments"`
-	ReleaseTime string `json:"release_time"`
+	NotificationID int             `json:"notification_id"`
+	SenderUID      string          `json:"sender_uid"`
+	Title          string          `json:"title"`
+	Content        string          `json:"content"`
+	Attachments    []attachmentDTO `json:"attachments"`
+	ReleaseTime    time.Time          `json:"release_time"`
 }
 
 type adminNotificationResponseDTO struct {
-	NotificationID int `json:"notification_id"`
-	Title string `json:"title"`
-	Content string `json:"content"`
-	Attachments []attachmentDTO `json:"attachments"`
-	Status int `json:"status"`
-	ReleaseTime string `json:"release_time"`
+	NotificationID int             `json:"notification_id"`
+	Title          string          `json:"title"`
+	Content        string       `json:"content"`
+	Attachments    []attachmentDTO `json:"attachments"`
+	Status         int             `json:"status"`
+	ReleaseTime    time.Time         `json:"release_time"`
 }
-

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/config/database"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
@@ -16,7 +17,7 @@ type NotificationContentEntity struct {
 	SenderUID string `gorm:"column:sender_uid"`
 	Payload json.RawMessage `gorm:"column:pay_load"`
 	Status     int    `gorm:"column:status"`
-	ReleaseTime      string    `gorm:"column:release_time"`
+	ReleaseTime      time.Time    `gorm:"column:release_time"`
 }
 
 type NotificationTargetEntity struct{

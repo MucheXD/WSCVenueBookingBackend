@@ -1,6 +1,9 @@
 package models
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"time"
+)
 
 type Notification struct {
 	ID          int
@@ -12,5 +15,5 @@ type Notification struct {
 	Payload     json.RawMessage
 	Attachments []Attachment
 	Status      int
-	ReleaseTime string
+	ReleaseTime time.Time
 }
