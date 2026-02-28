@@ -1,4 +1,4 @@
-package roleCtrl
+package venueCtrl
 
 import (
 	"errors"

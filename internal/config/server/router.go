@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/controllers/applicationCtrl"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/controllers/fileCtrl"
-	"github.com/MucheXD/WSCVenueBookingBackend/internal/controllers/roleCtrl"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/controllers/userCtrl"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/controllers/venueCtrl"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/middlewares"
@@ -82,7 +81,7 @@ func initRouter() {
 		venueCtrl.GetVenueLocationsHandler)
 
 	// 列出可修改权限的场地（轻量数据）- 需要 ChangeUserVenueAccess 系统权限
-	GinEngine.GET("/api/venue/list",
+	GinEngine.GET("/api/role/:vagid/venue",
 		middlewares.AuthMiddleware(),
 		middlewares.CheckSystemPermission(systemPermission.ChangeUserVenueAccess),
 		venueCtrl.ListVenueAccessBodiesHandler)
@@ -91,15 +90,15 @@ func initRouter() {
 	GinEngine.GET("/api/role",
 		middlewares.AuthMiddleware(),
 		middlewares.CheckSystemPermission(systemPermission.ChangeUserVenueAccess),
-		roleCtrl.ListRolesHandler)
+		venueCtrl.ListRolesHandler)
 	GinEngine.POST("/api/role",
 		middlewares.AuthMiddleware(),
 		middlewares.CheckSystemPermission(systemPermission.ChangeUserVenueAccess),
-		roleCtrl.CreateRoleHandler)
+		venueCtrl.CreateRoleHandler)
 	GinEngine.PUT("/api/role/:vagid",
 		middlewares.AuthMiddleware(),
 		middlewares.CheckSystemPermission(systemPermission.ChangeUserVenueAccess),
-		roleCtrl.UpdateRoleHandler)
+		venueCtrl.UpdateRoleHandler)
 
 	// 申请单相关路由
 	GinEngine.POST("/api/venue/:venue_id/application",
