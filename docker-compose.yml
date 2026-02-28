@@ -59,9 +59,11 @@ services:
     restart: always
     ports:
       - "80:80"
+    environment:
+      - BACKEND_ORIGIN=http://backend:8080
     depends_on:
       - backend
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 2048M
