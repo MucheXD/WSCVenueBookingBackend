@@ -99,11 +99,6 @@ type VenueListOptions struct {
 	SysPerm     uint64
 }
 
-// ListVenues 列出场地
-func ListVenues(ctx context.Context, opts VenueListOptions) ([]*models.Venue, error) {
-	return ListFullVenues(ctx, opts)
-}
-
 // ListFullVenues 列出完整场地列表（供含附件/时段等后续查询的链路使用）
 func ListFullVenues(ctx context.Context, opts VenueListOptions) ([]*models.Venue, error) {
 	// 设置默认分页大小
@@ -151,17 +146,6 @@ func GetAccessibleBuildingsAndCampuses(ctx context.Context, vagid int, allowAll 
 	}
 	return buildings, campuses, nil
 }
-
-// func checkVenueExists(venueID int) error {
-// 	exists, err := repository.VenueExists(venueID)
-// 	if err != nil {
-// 		return fmt.Errorf("%w: %w", ErrVenueNotFound, err)
-// 	}
-// 	if !exists {
-// 		return ErrVenueNotFound
-// 	}
-// 	return nil
-// }
 
 // checkBuildingExists 检查楼区是否存在
 func checkBuildingExists(buildingID int) error {

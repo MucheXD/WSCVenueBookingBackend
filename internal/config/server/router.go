@@ -85,7 +85,7 @@ func initRouter() {
 	GinEngine.GET("/api/venue/list",
 		middlewares.AuthMiddleware(),
 		middlewares.CheckSystemPermission(systemPermission.ChangeUserVenueAccess),
-		venueCtrl.ListVenueBodiesHandler)
+		venueCtrl.ListVenueAccessBodiesHandler)
 
 	// 场地权限角色组管理 - 需要 ChangeUserVenueAccess 系统权限
 	GinEngine.GET("/api/role",

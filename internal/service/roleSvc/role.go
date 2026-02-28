@@ -64,7 +64,7 @@ func CreateRole(ctx context.Context, input CreateRoleInput) (int, error) {
 		if err != nil {
 			return err
 		}
-		if rows != int64(len(input.Accesses)) {
+		if rows != int64(len(input.Accesses)) || rows == 0 {
 			return ErrRoleAccessGroupNotMatched
 		}
 		return nil
@@ -76,6 +76,7 @@ func CreateRole(ctx context.Context, input CreateRoleInput) (int, error) {
 		return 0, fmt.Errorf("%w: %w", ErrRoleCreateInDB, err)
 	}
 
+	// 刷新权限缓存
 	if err := venuePermission.RefreshVenueAccessCache(repository.NewVenueAccessLoader()); err != nil {
 		return 0, fmt.Errorf("%w: %w", ErrRoleQueryInDB, err)
 	}
@@ -134,6 +135,7 @@ func UpdateRole(ctx context.Context, vagid int, input UpdateRoleInput) error {
 		return fmt.Errorf("%w: %w", ErrRoleUpdateInDB, err)
 	}
 
+	// 刷新权限缓存
 	if input.Accesses != nil {
 		if err := venuePermission.RefreshVenueAccessCache(repository.NewVenueAccessLoader()); err != nil {
 			return fmt.Errorf("%w: %w", ErrRoleQueryInDB, err)

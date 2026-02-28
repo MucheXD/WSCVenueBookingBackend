@@ -96,7 +96,7 @@ func ListVenuesHandler(c *gin.Context) {
 	}
 
 	// 调用服务层查询场地列表
-	venues, err := venueSvc.ListVenues(c.Request.Context(), opts)
+	venues, err := venueSvc.ListFullVenues(c.Request.Context(), opts)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
