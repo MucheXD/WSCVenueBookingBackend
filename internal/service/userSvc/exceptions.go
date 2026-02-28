@@ -23,9 +23,11 @@ var (
 
 	ErrUsernameAlreadyExists = errors.New("username already exists")
 
-	ErrCheckUsernameExistsInDB = errors.New("failed to check if username exists in database")
-	ErrCreateUserInDB          = errors.New("failed to create user in database")
-	ErrUpdateUserInDB          = errors.New("failed to edit user in database")
-	ErrQueryUserInDB           = errors.New("failed to query user in database")
-	ErrUserNotFound            = errors.New("user not found")
+	ErrCheckUsernameExistsInDB  = errors.New("failed to check if username exists in database")
+	ErrCreateUserInDB           = errors.New("failed to create user in database")
+	ErrUpdateUserInDB           = errors.New("failed to edit user in database")
+	ErrQueryUserInDB            = errors.New("failed to query user in database")
+	ErrUserNotFound             = errors.New("user not found")
+	ErrVenueAccessGroupInvalid  = errors.New("venue access group id is invalid")
+	ErrVenueAccessGroupNotFound = errors.New("venue access group not found")
 )

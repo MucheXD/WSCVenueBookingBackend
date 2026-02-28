@@ -125,6 +125,19 @@ func BatchUpdateUsersPermMap(userIDs []string, permMap uint64) error {
 	return nil
 }
 
+func BatchUpdateUsersVAGID(userIDs []string, permVAGID int) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	if err := database.DB.Model(&UserEntity{}).
+		Where("uid IN ?", userIDs).
+		Update("perm_vagid", permVAGID).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
 // Entity-Domain Conversion (Private Methods)
 
 func (u *UserEntity) fromDomain(modelU *models.User) {

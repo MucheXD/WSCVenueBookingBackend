@@ -49,11 +49,51 @@ func GetUserProfile(c context.Context, userID string) (*models.User, error) {
 func BatchUpdateUsersSystemPermission(c context.Context, userIDs []string, permMap uint64) error {
 	_ = c
 
+	cleanUserIDs := normalizeUserIDs(userIDs)
+	if len(cleanUserIDs) == 0 {
+		return nil
+	}
+
+	err := repository.BatchUpdateUsersPermMap(cleanUserIDs, permMap)
+	if err != nil {
+		return fmt.Errorf("%w:%w", ErrUpdateUserInDB, err)
+	}
+	return nil
+}
+
+func BatchUpdateUsersVenueAccessGroup(c context.Context, userIDs []string, vagid int) error {
+	_ = c
+
+	if vagid < 0 {
+		return ErrVenueAccessGroupInvalid
+	}
+
+	cleanUserIDs := normalizeUserIDs(userIDs)
+	if len(cleanUserIDs) == 0 {
+		return nil
+	}
+
+	if vagid > 0 {
+		if _, err := repository.GetVenueRoleByID(vagid); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrVenueAccessGroupNotFound
+			}
+			return fmt.Errorf("%w:%w", ErrQueryUserInDB, err)
+		}
+	}
+
+	err := repository.BatchUpdateUsersVAGID(cleanUserIDs, vagid)
+	if err != nil {
+		return fmt.Errorf("%w:%w", ErrUpdateUserInDB, err)
+	}
+	return nil
+}
+
+func normalizeUserIDs(userIDs []string) []string {
 	if len(userIDs) == 0 {
 		return nil
 	}
 
-	// UID 清洗与去重
 	cleanUserIDs := make([]string, 0, len(userIDs))
 	seen := make(map[string]struct{}, len(userIDs))
 	for _, uid := range userIDs {
@@ -69,13 +109,5 @@ func BatchUpdateUsersSystemPermission(c context.Context, userIDs []string, permM
 		cleanUserIDs = append(cleanUserIDs, trUID)
 	}
 
-	if len(cleanUserIDs) == 0 {
-		return nil
-	}
-
-	err := repository.BatchUpdateUsersPermMap(cleanUserIDs, permMap)
-	if err != nil {
-		return fmt.Errorf("%w:%w", ErrUpdateUserInDB, err)
-	}
-	return nil
+	return cleanUserIDs
 }

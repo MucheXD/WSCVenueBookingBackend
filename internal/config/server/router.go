@@ -46,6 +46,10 @@ func initRouter() {
 		middlewares.AuthMiddleware(),
 		middlewares.CheckSystemPermission(systemPermission.ChangeUserPermission),
 		userCtrl.GetSystemPermissionListHandler)
+	// (批量)修改用户场地权限组 - 需要 ChangeUserVenueAccess 系统权限
+	GinEngine.PUT("/api/user/vag", middlewares.AuthMiddleware(),
+		middlewares.CheckSystemPermission(systemPermission.ChangeUserVenueAccess),
+		userCtrl.UpdateUserVAGHandler)
 
 	// 文件相关路由
 	GinEngine.POST("/api/file",
