@@ -99,8 +99,8 @@ type VenueListOptions struct {
 	SysPerm     uint64
 }
 
-// ListVenues 列出场地
-func ListVenues(ctx context.Context, opts VenueListOptions) ([]*models.Venue, error) {
+// ListFullVenues 列出完整场地列表（供含附件/时段等后续查询的链路使用）
+func ListFullVenues(ctx context.Context, opts VenueListOptions) ([]*models.Venue, error) {
 	// 设置默认分页大小
 	if opts.Limit == 0 {
 		opts.Limit = 12
@@ -124,6 +124,16 @@ func ListVenues(ctx context.Context, opts VenueListOptions) ([]*models.Venue, er
 	return venues, nil
 }
 
+// ListVenueBodies 列出轻量场地信息（不附带附件、时间表等额外查询）
+func ListVenueBodies(ctx context.Context) ([]*models.Venue, error) {
+	_ = ctx
+	venues, err := repository.ListVenueBodies()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrVenueQueryInDB, err)
+	}
+	return venues, nil
+}
+
 // GetAccessibleBuildingsAndCampuses 根据权限组获取可访问的楼区和校区信息
 func GetAccessibleBuildingsAndCampuses(ctx context.Context, vagid int, allowAll bool) ([]*models.VenueBuilding, []*models.VenueCampus, error) {
 	buildings, err := repository.GetAccessibleBuildingList(vagid, allowAll)
@@ -136,17 +146,6 @@ func GetAccessibleBuildingsAndCampuses(ctx context.Context, vagid int, allowAll 
 	}
 	return buildings, campuses, nil
 }
-
-// func checkVenueExists(venueID int) error {
-// 	exists, err := repository.VenueExists(venueID)
-// 	if err != nil {
-// 		return fmt.Errorf("%w: %w", ErrVenueNotFound, err)
-// 	}
-// 	if !exists {
-// 		return ErrVenueNotFound
-// 	}
-// 	return nil
-// }
 
 // checkBuildingExists 检查楼区是否存在
 func checkBuildingExists(buildingID int) error {

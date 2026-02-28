@@ -33,14 +33,34 @@ func (VenueAccessEntity) TableName() string {
 }
 
 func CreateNewVenueAccessGroup(modelA *models.VenueAccess) error {
+	_, err := CreateNewVenueAccessGroupTx(database.DB, modelA)
+	return err
+}
+
+func CreateNewVenueAccessGroupTx(tx *gorm.DB, modelA *models.VenueAccess) (int64, error) {
 	entities := convVenueAccessToEntity(modelA)
-	if len(entities) == 0 {
-		return nil
+	return createVenueAccessEntriesTx(tx, entities)
+}
+
+func CreateVenueAccessEntriesTx(tx *gorm.DB, vagid int, entries []VenueAccessEntity) (int64, error) {
+	if len(entries) == 0 {
+		return 0, nil
 	}
-	if err := database.DB.Create(&entities).Error; err != nil {
-		return err
+	for i := range entries {
+		entries[i].VAGID = vagid
 	}
-	return nil
+	return createVenueAccessEntriesTx(tx, entries)
+}
+
+func createVenueAccessEntriesTx(tx *gorm.DB, entries []VenueAccessEntity) (int64, error) {
+	if len(entries) == 0 {
+		return 0, nil
+	}
+	txDB := tx.Create(&entries)
+	if txDB.Error != nil {
+		return 0, txDB.Error
+	}
+	return txDB.RowsAffected, nil
 }
 
 func GetVenueAccessGroupByID(vagID int) (*models.VenueAccess, error) {
@@ -60,6 +80,17 @@ func GetVenueAccessGroupByID(vagID int) (*models.VenueAccess, error) {
 
 func DeleteVenueAccessGroupByID(vagID int) error {
 	txDB := database.DB.
+		Model(&VenueAccessEntity{}).
+		Where(&VenueAccessEntity{VAGID: vagID}).
+		Delete(&VenueAccessEntity{})
+	if txDB.Error != nil {
+		return txDB.Error
+	}
+	return nil
+}
+
+func DeleteVenueAccessGroupByIDTx(tx *gorm.DB, vagID int) error {
+	txDB := tx.
 		Model(&VenueAccessEntity{}).
 		Where(&VenueAccessEntity{VAGID: vagID}).
 		Delete(&VenueAccessEntity{})

@@ -46,6 +46,10 @@ func initRouter() {
 		middlewares.AuthMiddleware(),
 		middlewares.CheckSystemPermission(systemPermission.ChangeUserPermission),
 		userCtrl.GetSystemPermissionListHandler)
+	// (批量)修改用户场地权限组 - 需要 ChangeUserVenueAccess 系统权限
+	GinEngine.PUT("/api/user/vag", middlewares.AuthMiddleware(),
+		middlewares.CheckSystemPermission(systemPermission.ChangeUserVenueAccess),
+		userCtrl.UpdateUserVAGHandler)
 
 	// 文件相关路由
 	GinEngine.POST("/api/file",
@@ -79,6 +83,26 @@ func initRouter() {
 	GinEngine.GET("/api/venue/locations",
 		middlewares.AuthMiddleware(),
 		venueCtrl.GetVenueLocationsHandler)
+
+	// 列出可修改权限的场地（轻量数据）- 需要 ChangeUserVenueAccess 系统权限
+	GinEngine.GET("/api/role/:vagid/venue",
+		middlewares.AuthMiddleware(),
+		middlewares.CheckSystemPermission(systemPermission.ChangeUserVenueAccess),
+		venueCtrl.ListVenueAccessBodiesHandler)
+
+	// 场地权限角色组管理 - 需要 ChangeUserVenueAccess 系统权限
+	GinEngine.GET("/api/role",
+		middlewares.AuthMiddleware(),
+		middlewares.CheckSystemPermission(systemPermission.ChangeUserVenueAccess),
+		venueCtrl.ListRolesHandler)
+	GinEngine.POST("/api/role",
+		middlewares.AuthMiddleware(),
+		middlewares.CheckSystemPermission(systemPermission.ChangeUserVenueAccess),
+		venueCtrl.CreateRoleHandler)
+	GinEngine.PUT("/api/role/:vagid",
+		middlewares.AuthMiddleware(),
+		middlewares.CheckSystemPermission(systemPermission.ChangeUserVenueAccess),
+		venueCtrl.UpdateRoleHandler)
 
 	// 申请单相关路由
 	GinEngine.POST("/api/venue/:venue_id/application",

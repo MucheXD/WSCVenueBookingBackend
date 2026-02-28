@@ -11,5 +11,6 @@ CREATE TABLE venue_accesses (
     # Manage 权限包含设置维护时段、维护可用设备列表、发布场地公告等
     allow_manage BOOLEAN not null DEFAULT false COMMENT 'Whether this access group allows manage',
     Foreign Key (venue_id) REFERENCES venues (venue_id),
+    Foreign Key (vagid) REFERENCES venue_roles (vagid),
     CONSTRAINT uq_vagid_venue_id UNIQUE (vagid, venue_id)
 ) COMMENT 'Venue Accesses Table';

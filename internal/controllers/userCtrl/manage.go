@@ -1,6 +1,8 @@
 package userCtrl
 
 import (
+	"errors"
+
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/service/userSvc"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/apiException"
@@ -11,6 +13,11 @@ import (
 type UpdateUserSysPermDTO struct {
 	UserID  []string `json:"uids" binding:"required"`
 	SysPerm uint64   `json:"system_permission" binding:"required"`
+}
+
+type UpdateUserVAGDTO struct {
+	UserID []string `json:"uids" binding:"required"`
+	VAGID  int      `json:"vagid" binding:"required"`
 }
 
 // GetSystemPermissionListHandler 获取系统权限列表
@@ -38,6 +45,31 @@ func UpdateUserSysPermHandler(c *gin.Context) {
 
 	err := userSvc.BatchUpdateUsersSystemPermission(c.Request.Context(), req.UserID, uint64(req.SysPerm))
 	if err != nil {
+		apiException.AbortWithException(c, apiException.ServerError, err)
+		return
+	}
+
+	utils.SetSuccessJsonResponse(c, nil)
+}
+
+func UpdateUserVAGHandler(c *gin.Context) {
+	var req UpdateUserVAGDTO
+	if err := c.ShouldBindJSON(&req); err != nil {
+		apiException.AbortWithException(c, apiException.ParamError, err)
+		return
+	}
+
+	if len(req.UserID) == 0 {
+		apiException.AbortWithException(c, apiException.ParamError)
+		return
+	}
+
+	err := userSvc.BatchUpdateUsersVenueAccessGroup(c.Request.Context(), req.UserID, req.VAGID)
+	if err != nil {
+		if errors.Is(err, userSvc.ErrVenueAccessGroupInvalid) || errors.Is(err, userSvc.ErrVenueAccessGroupNotFound) {
+			apiException.AbortWithException(c, apiException.ParamError, err)
+			return
+		}
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
