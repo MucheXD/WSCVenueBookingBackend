@@ -34,9 +34,10 @@ services:
     command: redis-server --appendonly yes --requirepass "${REDIS_PASSWORD}"
 
   # 后端服务
-  app:
+  backend:
     build:
       context: .
+      dockerfile: Dockerfile
     container_name: backendsrv
     restart: always
     ports:
@@ -48,3 +49,19 @@ services:
       resources:
         limits:
           memory: 256M
+
+  # 前端服务 (构建交由后端管理)
+  frontend:
+    build:
+      context: ../../frontend/WSCVenueBookingFrontend
+      dockerfile: Dockerfile
+    container_name: frontendsrv
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    deploy:
+      resources:
+        limits:
+          memory: 512M
