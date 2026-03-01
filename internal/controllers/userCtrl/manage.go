@@ -2,6 +2,7 @@ package userCtrl
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/service/userSvc"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils"
@@ -9,6 +10,55 @@ import (
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/systemPermission"
 	"github.com/gin-gonic/gin"
 )
+
+type userListItemDTO struct {
+	UID          string `json:"uid"`
+	Username     string `json:"username"`
+	SchoolID     string `json:"school_id"`
+	RealName     string `json:"real_name"`
+	PhoneNumber  string `json:"phone_number"`
+	RegisteredAt string `json:"registered_at"`
+	UpdatedAt    string `json:"updated_at"`
+	PermMap      uint64 `json:"perm_map"`
+	PermVAGID    int    `json:"perm_vagid"`
+}
+
+func ListUsersHandler(c *gin.Context) {
+	offset, err := strconv.Atoi(c.DefaultQuery("o", "0"))
+	if err != nil || offset < 0 {
+		apiException.AbortWithException(c, apiException.ParamError)
+		return
+	}
+
+	limit, err := strconv.Atoi(c.DefaultQuery("n", "10"))
+	if err != nil || limit <= 0 {
+		apiException.AbortWithException(c, apiException.ParamError)
+		return
+	}
+
+	users, err := userSvc.ListUsers(c.Request.Context(), offset, limit)
+	if err != nil {
+		apiException.AbortWithException(c, apiException.ServerError, err)
+		return
+	}
+
+	result := make([]userListItemDTO, 0, len(users))
+	for _, user := range users {
+		result = append(result, userListItemDTO{
+			UID:          user.UID,
+			Username:     user.Username,
+			SchoolID:     user.SchoolID,
+			RealName:     user.RealName,
+			PhoneNumber:  user.PhoneNumber,
+			RegisteredAt: formatRFC3339(user.RegisterTime),
+			UpdatedAt:    formatRFC3339(user.UpdatedAt),
+			PermMap:      user.PermMap,
+			PermVAGID:    user.PermVAGID,
+		})
+	}
+
+	utils.SetSuccessJsonResponse(c, result)
+}
 
 type UpdateUserSysPermDTO struct {
 	UserID  []string `json:"uids" binding:"required"`
