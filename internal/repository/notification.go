@@ -7,6 +7,7 @@ import (
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/config/database"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type NotificationContentEntity struct {
@@ -65,17 +66,38 @@ func CreateNotificationContentTx(tx *gorm.DB, notification *models.Notification)
 }
 
 func CreateNotificationTargetTx(tx *gorm.DB, notification *models.Notification) error {
-	entity := NotificationTargetEntity{
-		NotificationID: notification.ID,
-		ReceiverUID:    notification.ReceiverUID,
-		IsRead:         false,
-		Type:           notification.Type,
+	if notification == nil {
+		return gorm.ErrInvalidData
 	}
-	if err := tx.Create(&entity).Error; err != nil {
-		return err
+	return CreateNotificationTargetsTx(tx, []models.Notification{*notification})
+}
+
+func CreateNotificationTargetsTx(tx *gorm.DB, notifications []models.Notification) error {
+	if len(notifications) == 0 {
+		return nil
 	}
 
-	return nil
+	entities := make([]NotificationTargetEntity, 0, len(notifications))
+	for _, notification := range notifications {
+		if notification.ID == 0 || notification.ReceiverUID == "" {
+			continue
+		}
+		entities = append(entities, NotificationTargetEntity{
+			NotificationID: notification.ID,
+			ReceiverUID:    notification.ReceiverUID,
+			IsRead:         false,
+			Type:           notification.Type,
+		})
+	}
+
+	if len(entities) == 0 {
+		return nil
+	}
+
+	return tx.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "notification_id"}, {Name: "receiver_uid"}},
+		DoNothing: true,
+	}).Create(&entities).Error
 }
 
 func SoftDeleteNotificationsTx(tx *gorm.DB, notificationID int) error {

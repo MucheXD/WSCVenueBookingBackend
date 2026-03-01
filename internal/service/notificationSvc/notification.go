@@ -91,21 +91,17 @@ func ListNotifications(ctx context.Context, userID string) ([]models.Notificatio
 		if err != nil {
 			return err
 		}
-		var notificationTargets []models.Notification
-		for _, notificationID := range notificationIDs {
-			notificationTargets = append(notificationTargets, models.Notification{
-				ID:          notificationID,
-				ReceiverUID: userID,
-				Type:        1,
-			})
-		}
-
-		if len(notificationTargets) > 0 {
-			for _, notificationTarget := range notificationTargets {
-				err := repository.CreateNotificationTargetTx(tx, &notificationTarget)
-				if err != nil {
-					return err
-				}
+		if len(notificationIDs) > 0 {
+			notificationTargets := make([]models.Notification, 0, len(notificationIDs))
+			for _, notificationID := range notificationIDs {
+				notificationTargets = append(notificationTargets, models.Notification{
+					ID:          notificationID,
+					ReceiverUID: userID,
+					Type:        1,
+				})
+			}
+			if err := repository.CreateNotificationTargetsTx(tx, notificationTargets); err != nil {
+				return err
 			}
 		}
 
