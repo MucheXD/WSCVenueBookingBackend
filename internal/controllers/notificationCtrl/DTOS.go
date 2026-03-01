@@ -15,7 +15,7 @@ type createNotificationForm struct {
 	Content     string          `json:"content"`
 	Attachments []attachmentDTO `json:"attachments"`
 	Status      int             `json:"status"`
-	ReleaseTime time.Time          `json:"release_time"`
+	ReleaseTime time.Time       `json:"release_time"`
 }
 
 type updateNotificationForm struct {
@@ -23,7 +23,7 @@ type updateNotificationForm struct {
 	Content     string          `json:"content"`
 	Attachments []attachmentDTO `json:"attachments"`
 	Status      int             `json:"status"`
-	ReleaseTime time.Time          `json:"release_time"`
+	ReleaseTime time.Time       `json:"release_time"`
 }
 
 type notificationResponseDTO struct {
@@ -32,14 +32,14 @@ type notificationResponseDTO struct {
 	Title          string          `json:"title"`
 	Content        string          `json:"content"`
 	Attachments    []attachmentDTO `json:"attachments"`
-	ReleaseTime    time.Time          `json:"release_time"`
+	ReleaseTime    time.Time       `json:"release_time"`
 }
 
-type adminNotificationResponseDTO struct {
+type sentNotificationResponseDTO struct {
 	NotificationID int             `json:"notification_id"`
 	Title          string          `json:"title"`
-	Content        string       `json:"content"`
+	Content        string          `json:"content"`
 	Attachments    []attachmentDTO `json:"attachments"`
 	Status         int             `json:"status"`
-	ReleaseTime    time.Time         `json:"release_time"`
+	ReleaseTime    time.Time       `json:"release_time"`
 }

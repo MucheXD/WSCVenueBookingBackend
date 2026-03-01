@@ -7,63 +7,57 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// 传入申请单 -> 申请单模型
 func toNotificationModel(req createNotificationForm) (models.Notification, error) {
 	return models.Notification{
-		Title: req.Title,
-		Content: req.Content,
+		Title:       req.Title,
+		Content:     req.Content,
 		ReleaseTime: req.ReleaseTime,
 		ReceiverUID: req.ReceiverUID,
-		Status: req.Status,
-		Attachments:            toAttachmentModelList(req.Attachments),
+		Status:      req.Status,
+		Attachments: toAttachmentModelList(req.Attachments),
 	}, nil
 }
 
 func toUpdateNotificationModel(req updateNotificationForm) (models.Notification, error) {
 	return models.Notification{
-		Title: req.Title,
-		Content: req.Content,
+		Title:       req.Title,
+		Content:     req.Content,
 		ReleaseTime: req.ReleaseTime,
-		Status: req.Status,
-		Attachments:            toAttachmentModelList(req.Attachments),
+		Status:      req.Status,
+		Attachments: toAttachmentModelList(req.Attachments),
 	}, nil
 }
 
-
-// 申请单模型 -> 申请单传出
 func toNotificationResponseList(notifications []models.Notification) []notificationResponseDTO {
 	result := make([]notificationResponseDTO, 0, len(notifications))
 	for _, notification := range notifications {
 		result = append(result, notificationResponseDTO{
-			NotificationID:        notification.ID,
-			SenderUID: notification.SenderUID,
-			Title: notification.Title,
-			Content: notification.Content,
-			ReleaseTime: notification.ReleaseTime,
-			Attachments:           toAttachmentDTOList(notification.Attachments),
-
+			NotificationID: notification.ID,
+			SenderUID:      notification.SenderUID,
+			Title:          notification.Title,
+			Content:        notification.Content,
+			ReleaseTime:    notification.ReleaseTime,
+			Attachments:    toAttachmentDTOList(notification.Attachments),
 		})
 	}
 	return result
 }
 
-func toAdminNotificationResponseList(notifications []models.Notification) []adminNotificationResponseDTO {
-	result := make([]adminNotificationResponseDTO, 0, len(notifications))
+func toSentNotificationResponseList(notifications []models.Notification) []sentNotificationResponseDTO {
+	result := make([]sentNotificationResponseDTO, 0, len(notifications))
 	for _, notification := range notifications {
-		result = append(result, adminNotificationResponseDTO{
-			NotificationID:        notification.ID,
-			Title: notification.Title,
-			Content: notification.Content,
-			Status: notification.Status,
-			ReleaseTime: notification.ReleaseTime,
-			Attachments:           toAttachmentDTOList(notification.Attachments),
-
+		result = append(result, sentNotificationResponseDTO{
+			NotificationID: notification.ID,
+			Title:          notification.Title,
+			Content:        notification.Content,
+			Status:         notification.Status,
+			ReleaseTime:    notification.ReleaseTime,
+			Attachments:    toAttachmentDTOList(notification.Attachments),
 		})
 	}
 	return result
 }
 
-// 传入附件表 -> 附件表模型
 func toAttachmentModelList(values []attachmentDTO) []models.Attachment {
 	if len(values) == 0 {
 		return []models.Attachment{}
@@ -80,7 +74,6 @@ func toAttachmentModelList(values []attachmentDTO) []models.Attachment {
 	return result
 }
 
-// 附件表模型 -> 附件表传出
 func toAttachmentDTOList(values []models.Attachment) []attachmentDTO {
 	if len(values) == 0 {
 		return []attachmentDTO{}
@@ -122,7 +115,7 @@ func getPermissionContext(c *gin.Context) (int, uint64, bool) {
 	return vagid, sysPermMap, true
 }
 
-func hasNotificationPermission( sysPermMap uint64) bool {
+func hasNotificationPermission(sysPermMap uint64) bool {
 	if systemPermission.Check(sysPermMap, systemPermission.SendSystemAnnouncement) {
 		return true
 	}

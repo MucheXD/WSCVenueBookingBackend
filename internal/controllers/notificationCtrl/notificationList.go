@@ -7,10 +7,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-
 func ListNotificationHandler(c *gin.Context) {
-	userID:=c.GetString("UserID")
-	notifications, err := notificationSvc.ListNotifications(c.Request.Context(),userID)
+	userID := c.GetString("UserID")
+	notifications, err := notificationSvc.ListNotifications(c.Request.Context(), userID)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
@@ -18,10 +17,8 @@ func ListNotificationHandler(c *gin.Context) {
 
 	utils.SetSuccessJsonResponse(c, toNotificationResponseList(notifications))
 }
-	
-	
 
-func ListSendedNotificationsHandler(c *gin.Context) {
+func ListSentNotificationsHandler(c *gin.Context) {
 	userID := c.GetString("UserID")
 
 	_, sysPermMap, ok := getPermissionContext(c)
@@ -34,10 +31,10 @@ func ListSendedNotificationsHandler(c *gin.Context) {
 		return
 	}
 
-	notifications, err := notificationSvc.ListSendedNotifications(c.Request.Context(), userID)
+	notifications, err := notificationSvc.ListSentNotifications(c.Request.Context(), userID)
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
-	utils.SetSuccessJsonResponse(c, toAdminNotificationResponseList(notifications))
+	utils.SetSuccessJsonResponse(c, toSentNotificationResponseList(notifications))
 }

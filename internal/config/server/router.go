@@ -134,7 +134,7 @@ func initRouter() {
 		notificationCtrl.ListNotificationHandler)
 	GinEngine.GET("/api/user/notification",
 		middlewares.AuthMiddleware(),
-		notificationCtrl.ListSendedNotificationsHandler)
+		notificationCtrl.ListSentNotificationsHandler)
 	GinEngine.GET("/api/notification/unread",
 		middlewares.AuthMiddleware(),
 		notificationCtrl.GetUnreadNotificationsNumHandler)

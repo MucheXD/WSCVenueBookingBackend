@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func CreateNotification(ctx context.Context, notification models.Notification,senderUID string) (int, error) {
+func CreateNotification(ctx context.Context, notification models.Notification, senderUID string) (int, error) {
 	if notification.Content == "" {
 		return 0, ErrNotificationContentRequired
 	}
@@ -19,7 +19,7 @@ func CreateNotification(ctx context.Context, notification models.Notification,se
 		return 0, ErrNotificationTitleRequired
 	}
 
-	notification.SenderUID=senderUID
+	notification.SenderUID = senderUID
 
 	var createdID int
 	err := database.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -28,15 +28,15 @@ func CreateNotification(ctx context.Context, notification models.Notification,se
 			return err
 		}
 		createdID = id
-		if notification.Type==2{
-			notification.ID=createdID
+		if notification.Type == 2 {
+			notification.ID = createdID
 			err := repository.CreateNotificationTargetTx(tx, &notification)
 			if err != nil {
 				return err
 			}
 		}
 		return nil
-	})	
+	})
 	if err != nil {
 		return 0, fmt.Errorf("%w: %w", ErrNotificationCreateInDB, err)
 	}
@@ -64,7 +64,7 @@ func DeleteNotification(ctx context.Context, notificationID int) error {
 	return nil
 }
 
-func UpdateNotification(ctx context.Context, updates *models.Notification,notificationID int) error {
+func UpdateNotification(ctx context.Context, updates *models.Notification, notificationID int) error {
 	existingNotification, err := repository.GetNotificationByID(notificationID)
 	if err != nil {
 		return err
@@ -87,59 +87,58 @@ func UpdateNotification(ctx context.Context, updates *models.Notification,notifi
 func ListNotifications(ctx context.Context, userID string) ([]models.Notification, error) {
 	var notifications []models.Notification
 	err := database.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		notificationIDs,err:=repository.GetUnreadSystemNotificationsByUserID(tx,userID)
-		if err!=nil{
+		notificationIDs, err := repository.GetUnreadSystemNotificationsByUserID(tx, userID)
+		if err != nil {
 			return err
 		}
 		var notificationTargets []models.Notification
 		for _, notificationID := range notificationIDs {
-    		notificationTargets = append(notificationTargets, models.Notification{
-				ID:notificationID,
-        		ReceiverUID: userID,
-        		Type:1,
-    		})
+			notificationTargets = append(notificationTargets, models.Notification{
+				ID:          notificationID,
+				ReceiverUID: userID,
+				Type:        1,
+			})
 		}
 
 		if len(notificationTargets) > 0 {
-    		for _,notificationTarget:=range notificationTargets{
-				err:=repository.CreateNotificationTargetTx(tx,&notificationTarget)
-				if err!=nil{
+			for _, notificationTarget := range notificationTargets {
+				err := repository.CreateNotificationTargetTx(tx, &notificationTarget)
+				if err != nil {
 					return err
 				}
 			}
 		}
 
-		notifications, err = repository.ListNotifications(tx,userID)
+		notifications, err = repository.ListNotifications(tx, userID)
 		if err != nil {
 			return err
 		}
-		
-		err=repository.MarkRead(tx,userID)
+
+		err = repository.MarkRead(tx, userID)
 		if err != nil {
 			return err
 		}
-		
+
 		return nil
 	})
-	if err != nil {
-			return nil, fmt.Errorf("%w: %w", ErrNotificationQueryInDB, err)
-		}
-	return notifications, nil
-}
-
-func ListSendedNotifications(ctx context.Context, userID string) ([]models.Notification, error) {
-	notifications, err := repository.ListSendedNotifications(userID)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrNotificationQueryInDB, err)
 	}
 	return notifications, nil
 }
 
-func GetUnreadNotification(ctx context.Context, userID string)(int,error){
-	unreadNum,err:=repository.GetUnreadNotificationsNum(userID)
+func ListSentNotifications(ctx context.Context, userID string) ([]models.Notification, error) {
+	notifications, err := repository.ListSentNotifications(userID)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrNotificationQueryInDB, err)
+	}
+	return notifications, nil
+}
+
+func GetUnreadNotification(ctx context.Context, userID string) (int, error) {
+	unreadNum, err := repository.GetUnreadNotificationsNum(userID)
 	if err != nil {
 		return -1, err
 	}
-	return unreadNum,nil
+	return unreadNum, nil
 }
-
