@@ -138,6 +138,25 @@ func BatchUpdateUsersVAGID(userIDs []string, permVAGID int) error {
 	return nil
 }
 
+func ListUsers(offset int, limit int) ([]*models.User, error) {
+	var userEntities []UserEntity
+	if err := database.DB.
+		Model(&UserEntity{}).
+		Order("registered_at DESC").
+		Order("uid ASC").
+		Offset(offset).
+		Limit(limit).
+		Find(&userEntities).Error; err != nil {
+		return nil, err
+	}
+
+	users := make([]*models.User, 0, len(userEntities))
+	for _, userEntity := range userEntities {
+		users = append(users, userEntity.toDomain())
+	}
+	return users, nil
+}
+
 // Entity-Domain Conversion (Private Methods)
 
 func (u *UserEntity) fromDomain(modelU *models.User) {

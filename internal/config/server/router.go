@@ -35,6 +35,11 @@ func initRouter() {
 	GinEngine.GET("/api/user/profile/:uid", middlewares.AuthMiddleware(),
 		middlewares.CheckSystemPermission(systemPermission.UserManagement),
 		userCtrl.GetUserProfileHandler)
+	// 列出用户信息 - 需要 UserManagement 系统权限
+	// 使用 /api/account 是为临时契合前端所作出的妥协
+	GinEngine.GET("/api/account", middlewares.AuthMiddleware(),
+		middlewares.CheckSystemPermission(systemPermission.UserManagement),
+		userCtrl.ListUsersHandler)
 	// 修改密码 - 需要登录
 	GinEngine.POST("/api/user/change-password", middlewares.AuthMiddleware(),
 		userCtrl.UserChangePwdHandler)
