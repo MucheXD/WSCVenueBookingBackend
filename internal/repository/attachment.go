@@ -10,6 +10,7 @@ const (
 	AttachmentBizTypeVenue              = 1
 	AttachmentBizTypeApplication        = 2
 	AttachmentBizTypeApplicationComment = 3
+	AttachmentBizTypeNotification       = 4
 )
 
 type AttachmentEntity struct {
