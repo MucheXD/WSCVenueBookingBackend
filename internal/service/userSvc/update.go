@@ -89,6 +89,16 @@ func BatchUpdateUsersVenueAccessGroup(c context.Context, userIDs []string, vagid
 	return nil
 }
 
+func ListUsers(c context.Context, offset int, limit int) ([]*models.User, error) {
+	_ = c
+
+	users, err := repository.ListUsers(offset, limit)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrQueryUserInDB, err)
+	}
+	return users, nil
+}
+
 func normalizeUserIDs(userIDs []string) []string {
 	if len(userIDs) == 0 {
 		return nil
