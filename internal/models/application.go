@@ -29,6 +29,19 @@ type Application struct {
 	Attachments            []Attachment
 	Comments               []ApplicationComment
 	ActivityCoordinatorRaw json.RawMessage
+	CreatedAt              time.Time
+	ApprovalAt             *time.Time
+}
+
+// ApplicationStats 申请单统计数据
+type ApplicationStats struct {
+	AllApplications   int64
+	AllApproved       int64
+	AllRejected       int64
+	AllPending        int64
+	Last7Applications int64
+	Last7Approved     int64
+	Last7Rejected     int64
 }
 
 type ApplicationTimeRequest struct {

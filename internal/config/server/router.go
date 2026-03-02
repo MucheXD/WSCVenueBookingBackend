@@ -90,6 +90,11 @@ func initRouter() {
 		middlewares.AuthMiddleware(),
 		venueCtrl.GetVenueLocationsHandler)
 
+	// 获取场地统计数据 - 需要 AllVenueManage 或 AllVenueEdit 系统权限（在 controller 中动态检查）
+	GinEngine.GET("/api/venue/stats",
+		middlewares.AuthMiddleware(),
+		applicationCtrl.GetVenueStatsHandler)
+
 	// 列出可修改权限的场地（轻量数据）- 需要 ChangeUserVenueAccess 系统权限
 	GinEngine.GET("/api/role/:vagid/venue",
 		middlewares.AuthMiddleware(),

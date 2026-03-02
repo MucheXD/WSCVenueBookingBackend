@@ -237,3 +237,13 @@ func notifyApplicationDecision(applicantUID string, applicationID int, status st
 	_ = applicationID
 	_ = status
 }
+
+// GetApplicationStats 获取申请单统计数据
+func GetApplicationStats(ctx context.Context) (*models.ApplicationStats, error) {
+	_ = ctx
+	stats, err := repository.GetApplicationStats()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrApplicationQueryInDB, err)
+	}
+	return stats, nil
+}

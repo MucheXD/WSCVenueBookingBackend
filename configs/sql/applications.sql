@@ -11,6 +11,8 @@ CREATE TABLE applications (
     activity_name varchar(255) COMMENT '(ApplicationForm) Name of the activity',
     activity_organizer varchar(255) COMMENT '(ApplicationForm) Organizer of the activity',
     activity_coordinator JSON COMMENT '(ApplicationForm) Coordinator details in JSON format',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Timestamp when the application was created',
+    approval_at TIMESTAMP NULL COMMENT 'Timestamp when the application was approved or rejected',
     deleted_at TIMESTAMP NULL COMMENT '(RepoLayerOnly) Soft delete timestamp',
     Foreign Key (venue_id) REFERENCES venues (venue_id),
     Foreign Key (applicant_uid) REFERENCES users (uid)

@@ -20,6 +20,8 @@ type ApplicationEntity struct {
 	ActivityName          string         `gorm:"column:activity_name"`
 	ActivityOrganizer     string         `gorm:"column:activity_organizer"`
 	ActivityCoordinator   []byte         `gorm:"column:activity_coordinator"`
+	CreatedAt             time.Time      `gorm:"column:created_at;autoCreateTime"`
+	ApprovalAt            *time.Time     `gorm:"column:approval_at"`
 	DeletedAt             gorm.DeletedAt `gorm:"column:deleted_at"`
 }
 
@@ -156,6 +158,8 @@ func GetApplicationBodyByID(applicationID int) (*models.Application, error) {
 		Attachments:            []models.Attachment{},
 		Comments:               []models.ApplicationComment{},
 		ActivityCoordinatorRaw: entity.ActivityCoordinator,
+		CreatedAt:              entity.CreatedAt,
+		ApprovalAt:             entity.ApprovalAt,
 	}, nil
 }
 
@@ -216,6 +220,7 @@ func UpdateApplicationStatusTx(tx *gorm.DB, applicationID int, status string) er
 
 // UpdateApplicationStatusesTx 批量更新申请单状态
 // currentStatuses 可选：用于限制仅更新当前状态在该集合内的记录
+// 若新状态为已批准或已拒绝，同步将 approval_at 设置为当前时间
 func UpdateApplicationStatusesTx(tx *gorm.DB, applicationIDs []int, status string, currentStatuses ...string) error {
 	if len(applicationIDs) == 0 {
 		return nil
@@ -225,7 +230,14 @@ func UpdateApplicationStatusesTx(tx *gorm.DB, applicationIDs []int, status strin
 	if len(currentStatuses) > 0 {
 		query = query.Where("application_status IN ?", currentStatuses)
 	}
-	return query.Update("application_status", status).Error
+	updates := map[string]interface{}{
+		"application_status": status,
+	}
+	if status == models.ApplicationStatusApproved || status == models.ApplicationStatusRejected {
+		now := time.Now()
+		updates["approval_at"] = now
+	}
+	return query.Updates(updates).Error
 }
 
 // 获取冲突的申请单ID，使用高级数据库查询完成
@@ -378,7 +390,58 @@ func queryApplications(scope *gorm.DB) ([]models.Application, error) {
 			Attachments:            appAttachmentMap[entity.ID],
 			Comments:               commentsByApplication[entity.ID],
 			ActivityCoordinatorRaw: entity.ActivityCoordinator,
+			CreatedAt:              entity.CreatedAt,
+			ApprovalAt:             entity.ApprovalAt,
 		})
 	}
 	return applications, nil
+}
+
+// statsRow 用于接收单行聚合查询结果
+type statsRow struct {
+	AllApplications   int64 `gorm:"column:all_applications"`
+	AllApproved       int64 `gorm:"column:all_approved"`
+	AllRejected       int64 `gorm:"column:all_rejected"`
+	AllPending        int64 `gorm:"column:all_pending"`
+	Last7Applications int64 `gorm:"column:last7_applications"`
+	Last7Approved     int64 `gorm:"column:last7_approved"`
+	Last7Rejected     int64 `gorm:"column:last7_rejected"`
+}
+
+// GetApplicationStats 通过单次聚合查询获取申请单全量与近7天统计数据
+func GetApplicationStats() (*models.ApplicationStats, error) {
+	cutoff := time.Now().AddDate(0, 0, -7)
+
+	var row statsRow
+	err := database.DB.
+		Model(&ApplicationEntity{}).
+		Select(`
+			COUNT(*) AS all_applications,
+			SUM(CASE WHEN application_status = ? THEN 1 ELSE 0 END) AS all_approved,
+			SUM(CASE WHEN application_status = ? THEN 1 ELSE 0 END) AS all_rejected,
+			SUM(CASE WHEN application_status = ? THEN 1 ELSE 0 END) AS all_pending,
+			SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) AS last7_applications,
+			SUM(CASE WHEN application_status = ? AND approval_at >= ? THEN 1 ELSE 0 END) AS last7_approved,
+			SUM(CASE WHEN application_status = ? AND approval_at >= ? THEN 1 ELSE 0 END) AS last7_rejected
+		`,
+			models.ApplicationStatusApproved,
+			models.ApplicationStatusRejected,
+			models.ApplicationStatusRequested,
+			cutoff,
+			models.ApplicationStatusApproved, cutoff,
+			models.ApplicationStatusRejected, cutoff,
+		).
+		Scan(&row).Error
+	if err != nil {
+		return nil, err
+	}
+	return &models.ApplicationStats{
+		AllApplications:   row.AllApplications,
+		AllApproved:       row.AllApproved,
+		AllRejected:       row.AllRejected,
+		AllPending:        row.AllPending,
+		Last7Applications: row.Last7Applications,
+		Last7Approved:     row.Last7Approved,
+		Last7Rejected:     row.Last7Rejected,
+	}, nil
 }
