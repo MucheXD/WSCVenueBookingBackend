@@ -78,9 +78,12 @@ func PasswordLoginHandler(c *gin.Context) {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
 	}
-	utils.SetSuccessJsonResponse(c, map[string]string{
-		"uid":          userVerified.UID,
-		"display_name": userVerified.Username,
-		"webtoken":     wt,
-	})
+	utils.SetSuccessJsonResponse(c,
+		map[string]any{
+			"uid":                   userVerified.UID,
+			"display_name":          userVerified.Username,
+			"vagid":                 userVerified.PermVAGID,
+			"system_permission_map": userVerified.PermMap,
+			"webtoken":              wt,
+		})
 }
