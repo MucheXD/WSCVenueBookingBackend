@@ -99,29 +99,75 @@ type VenueListOptions struct {
 	SysPerm     uint64
 }
 
+type VenueApplicationCounts struct {
+	PendingCount   int
+	ProcessedCount int
+}
+
+func buildVenueQueryOptions(opts VenueListOptions, filterByPendingApplications bool) repository.VenueQueryOptions {
+	return repository.VenueQueryOptions{
+		BuildingIDs:                 opts.BuildingIDs,
+		TypeIDs:                     opts.TypeIDs,
+		Permissions:                 opts.Permissions,
+		SearchQuery:                 opts.SearchQuery,
+		Offset:                      opts.Offset,
+		Limit:                       opts.Limit,
+		VAGID:                       opts.VAGID,
+		SysPerm:                     opts.SysPerm,
+		FilterByPendingApplications: filterByPendingApplications,
+	}
+}
+
 // ListFullVenues 列出完整场地列表（供含附件/时段等后续查询的链路使用）
 func ListFullVenues(ctx context.Context, opts VenueListOptions) ([]*models.Venue, error) {
+	_ = ctx
 	// 设置默认分页大小
 	if opts.Limit == 0 {
 		opts.Limit = 12
 	}
 
 	// 查询场地列表
-	venues, err := repository.ListVenuesWithQuery(repository.VenueQueryOptions{
-		BuildingIDs: opts.BuildingIDs,
-		TypeIDs:     opts.TypeIDs,
-		Permissions: opts.Permissions,
-		SearchQuery: opts.SearchQuery,
-		Offset:      opts.Offset,
-		Limit:       opts.Limit,
-		VAGID:       opts.VAGID,
-		SysPerm:     opts.SysPerm,
-	})
+	venues, err := repository.ListVenuesWithQuery(buildVenueQueryOptions(opts, false))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrVenueQueryInDB, err)
 	}
-
 	return venues, nil
+}
+
+// ListFullVenuesWithAppCount 仅列出有待审批申请单的场地，并返回待审批/已处理统计。
+func ListFullVenuesWithAppCount(ctx context.Context, opts VenueListOptions) ([]*models.Venue, map[int]VenueApplicationCounts, error) {
+	_ = ctx
+	if opts.Limit == 0 {
+		opts.Limit = 12
+	}
+
+	venues, err := repository.ListVenuesWithQuery(buildVenueQueryOptions(opts, true))
+	if err != nil {
+		return nil, nil, fmt.Errorf("%w: %w", ErrVenueQueryInDB, err)
+	}
+
+	applicationCounts := map[int]VenueApplicationCounts{}
+	if len(venues) == 0 {
+		return venues, applicationCounts, nil
+	}
+
+	venueIDs := make([]int, 0, len(venues))
+	for _, venue := range venues {
+		venueIDs = append(venueIDs, venue.ID)
+	}
+
+	repoCounts, err := repository.GetApplicationCountsByVenueIDs(venueIDs)
+	if err != nil {
+		return nil, nil, fmt.Errorf("%w: %w", ErrVenueQueryInDB, err)
+	}
+	for venueID, counts := range repoCounts {
+		applicationCounts[venueID] = VenueApplicationCounts{
+			PendingCount:   counts.PendingCount,
+			ProcessedCount: counts.ProcessedCount,
+		}
+	}
+
+	return venues, applicationCounts, nil
 }
 
 // ListVenueBodies 列出轻量场地信息（不附带附件、时间表等额外查询）

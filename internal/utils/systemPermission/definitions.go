@@ -7,7 +7,7 @@ type SystemPermission uint64
 var (
 	BasicUser              SystemPermission = 1 << 0  // 基础权限，允许访问系统和查看个人信息
 	CreateNewVenue         SystemPermission = 1 << 1  // 允许创建新的场地
-	AllVenueReservation    SystemPermission = 1 << 2  // 允许所有场地的 Reservation 权限（无视场地权限表）
+	AllVenueReserve        SystemPermission = 1 << 2  // 允许所有场地的 Reservation 权限（无视场地权限表）
 	AllVenueApproval       SystemPermission = 1 << 3  // 允许所有场地的 Approval 权限（无视场地权限表）
 	AllVenueManage         SystemPermission = 1 << 4  // 允许所有场地的 Manage 权限（无视场地权限表）
 	AllVenueEdit           SystemPermission = 1 << 5  // 允许所有场地的 Edit 权限（无视场地权限表）
@@ -23,7 +23,7 @@ var (
 	RegisterDefault = BasicUser
 	PermTypeUser    = BasicUser
 	PermTypeAdmin   = BasicUser |
-		AllVenueReservation |
+		AllVenueReserve |
 		AllVenueApproval |
 		AllVenueManage |
 		AllVenueEdit |
@@ -31,7 +31,8 @@ var (
 		UserManagement |
 		SendSystemAnnouncement |
 		SendUserNotification
-	PermTypeOperator = AllowAll
+	PermTypeOperator      = AllowAll
+	SysNoSpecialVenuePerm = 0
 )
 
 var SystemPermissionDisplayList = []gin.H{

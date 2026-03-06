@@ -54,7 +54,7 @@ func GetVenueLocationsHandler(c *gin.Context) {
 	}
 
 	allowAll := systemPermission.SatisfyAny(sysPerm,
-		systemPermission.AllVenueReservation,
+		systemPermission.AllVenueReserve,
 		systemPermission.AllVenueApproval,
 		systemPermission.AllVenueManage,
 		systemPermission.AllVenueEdit,

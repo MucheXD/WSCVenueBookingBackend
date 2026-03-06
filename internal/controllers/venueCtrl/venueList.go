@@ -5,10 +5,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/repository"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/service/venueSvc"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/apiException"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/systemPermission"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/utils/venuePermission"
 	"github.com/gin-gonic/gin"
 )
@@ -24,6 +26,8 @@ type VenueDetailDTO struct {
 	Capacity        int             `json:"capacity"`
 	Equipments      any             `json:"equipments"`
 	Permissions     []string        `json:"permissions"`
+	Pending         *int            `json:"pending_applications,omitempty"`
+	Processed       *int            `json:"processed_applications,omitempty"`
 	Attachments     []AttachmentDTO `json:"attachments"`
 	Timetable       []TimeslotDTO   `json:"timetable"`
 }
@@ -59,7 +63,12 @@ func ListVenuesHandler(c *gin.Context) {
 	// 解析查询参数
 	buildingIDs := queryArrayAtoi(c.QueryArray("b"))
 	typeIDs := queryArrayAtoi(c.QueryArray("t"))
-	permissions := parsePermissionsFromString(c.Query("p"))
+	permissionTags := c.Query("p")
+	permissions := parsePermissionsFromString(permissionTags)
+	filterByPendingApplications := parseBoolFromQuery(c.Query("a"))
+	if hasPermissionFilter(permissionTags, 'R') {
+		filterByPendingApplications = false
+	}
 	searchQuery := c.Query("s")
 	offset, _ := strconv.Atoi(c.Query("o"))
 	limit, _ := strconv.Atoi(c.Query("n"))
@@ -96,7 +105,14 @@ func ListVenuesHandler(c *gin.Context) {
 	}
 
 	// 调用服务层查询场地列表
-	venues, err := venueSvc.ListFullVenues(c.Request.Context(), opts)
+	applicationCounts := map[int]venueSvc.VenueApplicationCounts{}
+	var err error
+	var venues []*models.Venue
+	if filterByPendingApplications {
+		venues, applicationCounts, err = venueSvc.ListFullVenuesWithAppCount(c.Request.Context(), opts)
+	} else {
+		venues, err = venueSvc.ListFullVenues(c.Request.Context(), opts)
+	}
 	if err != nil {
 		apiException.AbortWithException(c, apiException.ServerError, err)
 		return
@@ -117,7 +133,7 @@ func ListVenuesHandler(c *gin.Context) {
 			CoverImageToken: venue.CoverImageToken,
 			Capacity:        venue.Capacity,
 			Equipments:      unmarshalVenueEquipments(venue.EquipmentsRaw),
-			Permissions:     getVenuePermissionStrings(vagid, venue.ID),
+			Permissions:     getVenuePermissionStrings(vagid, venue.ID, sysPerm),
 			Attachments:     []AttachmentDTO{},
 			Timetable:       []TimeslotDTO{},
 		}
@@ -147,6 +163,17 @@ func ListVenuesHandler(c *gin.Context) {
 					End:   endTimeStr,
 				})
 			}
+		}
+
+		if filterByPendingApplications {
+			pending := 0
+			processed := 0
+			if counts, ok := applicationCounts[venue.ID]; ok {
+				pending = counts.PendingCount
+				processed = counts.ProcessedCount
+			}
+			dto.Pending = &pending
+			dto.Processed = &processed
 		}
 
 		result = append(result, dto)
@@ -192,19 +219,55 @@ func parsePermissionsFromString(str string) []venuePermission.VenuePerm {
 	return result
 }
 
+func parseBoolFromQuery(value string) bool {
+	if value == "" {
+		return false
+	}
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return false
+	}
+	return parsed
+}
+
+func hasPermissionFilter(raw string, required ...rune) bool {
+	if len(required) == 0 {
+		return false
+	}
+	if raw == "" {
+		return false
+	}
+	allowed := make(map[rune]struct{}, len(required))
+	for _, tag := range required {
+		allowed[tag] = struct{}{}
+	}
+	hasMatchedTag := false
+	for _, ch := range raw {
+		if _, ok := allowed[ch]; !ok {
+			return false
+		}
+		hasMatchedTag = true
+	}
+	return hasMatchedTag
+}
+
 // getVenuePermissionStrings 获取用户对特定场地的权限字符串列表
-func getVenuePermissionStrings(vagid int, venueID int) []string {
+func getVenuePermissionStrings(vagid int, venueID int, sysPerm uint64) []string {
 	permissions := []string{}
-	if venuePermission.CheckVenuePermission(vagid, venueID, venuePermission.Reserve) {
+	if venuePermission.CheckVenuePermission(vagid, venueID, venuePermission.Reserve) ||
+		systemPermission.Check(sysPerm, systemPermission.AllVenueReserve) {
 		permissions = append(permissions, "Reserve")
 	}
-	if venuePermission.CheckVenuePermission(vagid, venueID, venuePermission.Approval) {
+	if venuePermission.CheckVenuePermission(vagid, venueID, venuePermission.Approval) ||
+		systemPermission.Check(sysPerm, systemPermission.AllVenueApproval) {
 		permissions = append(permissions, "Approval")
 	}
-	if venuePermission.CheckVenuePermission(vagid, venueID, venuePermission.Manage) {
+	if venuePermission.CheckVenuePermission(vagid, venueID, venuePermission.Manage) ||
+		systemPermission.Check(sysPerm, systemPermission.AllVenueManage) {
 		permissions = append(permissions, "Manage")
 	}
-	if venuePermission.CheckVenuePermission(vagid, venueID, venuePermission.Edit) {
+	if venuePermission.CheckVenuePermission(vagid, venueID, venuePermission.Edit) ||
+		systemPermission.Check(sysPerm, systemPermission.AllVenueEdit) {
 		permissions = append(permissions, "Edit")
 	}
 	return permissions
@@ -219,4 +282,40 @@ func unmarshalVenueEquipments(raw json.RawMessage) any {
 		return nil
 	}
 	return result
+}
+
+type VenueSimpleDTO struct {
+	VenueID    int      `json:"venue_id"`
+	Name       string   `json:"name"`
+	BuildingID int      `json:"building_id"`
+	TypeID     int      `json:"type_id"`
+	Permission []string `json:"permission"`
+}
+
+// ListVenueAccessBodiesHandler 列出可修改权限的场地（轻量数据）
+// GET /api/venue/list
+func ListVenueAccessBodiesHandler(c *gin.Context) {
+	vagid, err := strconv.Atoi(c.Param("vagid"))
+	if err != nil {
+		apiException.AbortWithException(c, apiException.ParamError, err)
+		return
+	}
+	venues, err := venueSvc.ListVenueBodies(c.Request.Context())
+	if err != nil {
+		apiException.AbortWithException(c, apiException.ServerError, err)
+		return
+	}
+
+	result := make([]VenueSimpleDTO, 0, len(venues))
+	for _, venue := range venues {
+		result = append(result, VenueSimpleDTO{
+			VenueID:    venue.ID,
+			Name:       venue.Name,
+			BuildingID: venue.BuildingID,
+			TypeID:     venue.TypeID,
+			Permission: getVenuePermissionStrings(vagid, venue.ID, uint64(systemPermission.SysNoSpecialVenuePerm)),
+		})
+	}
+
+	utils.SetSuccessJsonResponse(c, result)
 }

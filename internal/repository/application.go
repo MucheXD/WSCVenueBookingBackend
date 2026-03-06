@@ -445,3 +445,49 @@ func GetApplicationStats() (*models.ApplicationStats, error) {
 		Last7Rejected:     row.Last7Rejected,
 	}, nil
 }
+
+type VenueApplicationCounts struct {
+	PendingCount   int
+	ProcessedCount int
+}
+
+type venueApplicationCountRow struct {
+	VenueID        int `gorm:"column:venue_id"`
+	PendingCount   int `gorm:"column:pending_count"`
+	ProcessedCount int `gorm:"column:processed_count"`
+}
+
+// GetApplicationCountsByVenueIDs 批量查询场地申请单统计，返回待审批与已处理（通过+拒绝）数量。
+func GetApplicationCountsByVenueIDs(venueIDs []int) (map[int]VenueApplicationCounts, error) {
+	countsByVenueID := make(map[int]VenueApplicationCounts, len(venueIDs))
+	if len(venueIDs) == 0 {
+		return countsByVenueID, nil
+	}
+
+	var rows []venueApplicationCountRow
+	err := database.DB.
+		Model(&ApplicationEntity{}).
+		Select(
+			`venue_id,
+			 SUM(CASE WHEN application_status = ? THEN 1 ELSE 0 END) AS pending_count,
+			 SUM(CASE WHEN application_status IN (?, ?) THEN 1 ELSE 0 END) AS processed_count`,
+			models.ApplicationStatusRequested,
+			models.ApplicationStatusApproved,
+			models.ApplicationStatusRejected,
+		).
+		Where("venue_id IN ?", venueIDs).
+		Group("venue_id").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	for _, row := range rows {
+		countsByVenueID[row.VenueID] = VenueApplicationCounts{
+			PendingCount:   row.PendingCount,
+			ProcessedCount: row.ProcessedCount,
+		}
+	}
+
+	return countsByVenueID, nil
+}

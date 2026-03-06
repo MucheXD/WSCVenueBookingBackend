@@ -102,14 +102,15 @@ func DeleteVenueByID(venueID int) error {
 
 // VenueQueryOptions 场地查询选项
 type VenueQueryOptions struct {
-	BuildingIDs []int                       // 楼区ID筛选
-	TypeIDs     []int                       // 类型ID筛选
-	Permissions []venuePermission.VenuePerm // 权限筛选
-	SearchQuery string                      // 搜索关键词
-	Offset      int                         // 分页偏移
-	Limit       int                         // 单页大小
-	VAGID       int                         // 用户的权限组ID
-	SysPerm     uint64                      // 用户的系统权限
+	BuildingIDs                 []int                       // 楼区ID筛选
+	TypeIDs                     []int                       // 类型ID筛选
+	Permissions                 []venuePermission.VenuePerm // 权限筛选
+	SearchQuery                 string                      // 搜索关键词
+	Offset                      int                         // 分页偏移
+	Limit                       int                         // 单页大小
+	VAGID                       int                         // 用户的权限组ID
+	SysPerm                     uint64                      // 用户的系统权限
+	FilterByPendingApplications bool                        // 仅返回有待审批申请单的场地
 }
 
 // ListVenuesWithQuery 列出满足权限条件的场地
@@ -128,7 +129,7 @@ func ListVenuesWithQuery(opts VenueQueryOptions) ([]*models.Venue, error) {
 	query := database.DB.Model(&VenueEntity{}).
 		Distinct("venues.*")
 
-	hasAllReserve := systemPermission.SatisfyAny(opts.SysPerm, systemPermission.AllVenueReservation)
+	hasAllReserve := systemPermission.SatisfyAny(opts.SysPerm, systemPermission.AllVenueReserve)
 	hasAllApproval := systemPermission.SatisfyAny(opts.SysPerm, systemPermission.AllVenueApproval)
 	hasAllManage := systemPermission.SatisfyAny(opts.SysPerm, systemPermission.AllVenueManage)
 	hasAllEdit := systemPermission.SatisfyAny(opts.SysPerm, systemPermission.AllVenueEdit)
@@ -176,6 +177,13 @@ func ListVenuesWithQuery(opts VenueQueryOptions) ([]*models.Venue, error) {
 			query = query.Where("va.vagid = ?", opts.VAGID)
 			query = query.Where(permConditions)
 		}
+	}
+
+	if opts.FilterByPendingApplications {
+		query = query.Joins(
+			"INNER JOIN applications pending_apps ON venues.venue_id = pending_apps.venue_id AND pending_apps.application_status = ? AND pending_apps.deleted_at IS NULL",
+			models.ApplicationStatusRequested,
+		)
 	}
 
 	// 楼区筛选

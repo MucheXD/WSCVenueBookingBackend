@@ -171,7 +171,7 @@ func handleServiceError(c *gin.Context, err error) {
 
 // 检查是否具有预约权限，规则为具有权限 Reserve 或 AllVenueReservation。
 func hasVenueReservePermission(vagid int, sysPermMap uint64, venueID int) bool {
-	if systemPermission.Check(sysPermMap, systemPermission.AllVenueReservation) {
+	if systemPermission.Check(sysPermMap, systemPermission.AllVenueReserve) {
 		return true
 	}
 	return venuePermission.CheckVenuePermission(vagid, venueID, venuePermission.Reserve)
