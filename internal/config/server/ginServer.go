@@ -17,6 +17,9 @@ func InitServer() {
 	if err != nil {
 		log.Fatal("Add tasks error:", err)
 	}
+	c.Start()
+	defer c.Stop()
+	
 	initRouter()
 	GinEngine.Run(":8080")
 }
