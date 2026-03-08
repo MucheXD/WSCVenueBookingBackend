@@ -3,14 +3,19 @@ package applicationSvc
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/config/database"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/models"
 	"github.com/MucheXD/WSCVenueBookingBackend/internal/repository"
+	"github.com/MucheXD/WSCVenueBookingBackend/internal/service/notificationSvc"
 	"gorm.io/gorm"
 )
+
+const systemNotificationSenderUID = "SYSTEM"
 
 type ApprovalResult struct {
 	NewConflicts []string
@@ -143,7 +148,14 @@ func ReviewApplication(ctx context.Context, approval models.ApplicationApproval,
 		if err != nil {
 			return ApprovalResult{}, fmt.Errorf("%w: %w", ErrApplicationUpdateInDB, err)
 		}
-		notifyApplicationDecision(application.ApplicantUID, approval.ApplicationID, models.ApplicationStatusRejected)
+		if notifyErr := notifyApplicationDecision(ctx, application.ApplicantUID, approval.ApplicationID, models.ApplicationStatusRejected); notifyErr != nil {
+			slog.Error("failed to notify application decision",
+				"application_id", approval.ApplicationID,
+				"recipient_uid", application.ApplicantUID,
+				"status", models.ApplicationStatusRejected,
+				"error", notifyErr,
+			)
+		}
 		return ApprovalResult{}, nil
 	}
 
@@ -193,9 +205,33 @@ func ReviewApplication(ctx context.Context, approval models.ApplicationApproval,
 		return ApprovalResult{}, fmt.Errorf("%w: %w", ErrApplicationUpdateInDB, err)
 	}
 
-	notifyApplicationDecision(application.ApplicantUID, approval.ApplicationID, models.ApplicationStatusApproved)
+	if notifyErr := notifyApplicationDecision(ctx, application.ApplicantUID, approval.ApplicationID, models.ApplicationStatusApproved); notifyErr != nil {
+		slog.Error("failed to notify application decision",
+			"application_id", approval.ApplicationID,
+			"recipient_uid", application.ApplicantUID,
+			"status", models.ApplicationStatusApproved,
+			"error", notifyErr,
+		)
+	}
 	for _, conflictID := range conflictIDs {
-		notifyApplicationDecision("", conflictID, models.ApplicationStatusRejected)
+		conflictApplication, findErr := repository.GetApplicationBodyByID(conflictID)
+		if findErr != nil {
+			slog.Error("failed to load conflict application when notifying decision",
+				"application_id", conflictID,
+				"status", models.ApplicationStatusRejected,
+				"error", findErr,
+			)
+			continue
+		}
+
+		if notifyErr := notifyApplicationDecision(ctx, conflictApplication.ApplicantUID, conflictID, models.ApplicationStatusRejected); notifyErr != nil {
+			slog.Error("failed to notify application decision",
+				"application_id", conflictID,
+				"recipient_uid", conflictApplication.ApplicantUID,
+				"status", models.ApplicationStatusRejected,
+				"error", notifyErr,
+			)
+		}
 	}
 
 	return ApprovalResult{}, nil
@@ -231,11 +267,35 @@ func equalIntSlice(a []int, b []int) bool {
 	return true
 }
 
-// 预留函数，等待“站内信”功能实现
-func notifyApplicationDecision(applicantUID string, applicationID int, status string) {
-	_ = applicantUID
-	_ = applicationID
-	_ = status
+// 通知申请人审批结果，通知失败由调用方记录日志并忽略
+func notifyApplicationDecision(ctx context.Context, applicantUID string, applicationID int, status string) error {
+	if applicantUID == "" {
+		return fmt.Errorf("missing applicant uid for application %d", applicationID)
+	}
+
+	statusText := ""
+	switch status {
+	case models.ApplicationStatusApproved:
+		statusText = "已通过"
+	case models.ApplicationStatusRejected:
+		statusText = "已拒绝"
+	default:
+		return fmt.Errorf("unsupported application status for notification: %s", status)
+	}
+
+	notification := models.Notification{
+		Type:        2,
+		Title:       "申请单审批结果通知",
+		Content:     fmt.Sprintf("您好，您发起的申请单 #%d 已被审批，结果：%s。", applicationID, statusText),
+		ReceiverUID: applicantUID,
+		Status:      1,
+		ReleaseTime: time.Now(),
+	}
+
+	if _, err := notificationSvc.CreateNotification(ctx, notification, systemNotificationSenderUID); err != nil {
+		return err
+	}
+	return nil
 }
 
 // GetApplicationStats 获取申请单统计数据

@@ -13,6 +13,7 @@ dist/
 # Test binary, built with `go test -c`
 *.test
 test/storage
+configs/sql/alter.sql
 
 # Code coverage profiles and other test artifacts
 *.out
