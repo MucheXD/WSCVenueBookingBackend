@@ -1,6 +1,11 @@
+> [!NOTE]
+> **此项目是一个练习项目，不适用于生产。**
+
 # WSCVenueBookingBackend
 
-场馆预订系统后端
+使用 Go 编写的“场馆预订系统”后端。
+
+与本项目关连的前端仓库为 [WSCVenueBookingFrontend](https://github.com/Promise2679/WSCVenueBookingFrontend) 
 
 ## 项目结构 / Project Structure
 
@@ -10,11 +15,9 @@
 ├───cmd # 可运行程序与功能入口
 │   ├───batchRegister # 提供批量注册功能
 │   ├───deploy # 项目自动化部署相关
-│   ├───main # 主进程启动位置
-│   ├───migrate # SQL 自动建表相关
-│   └───worker # 后台工作进程
+│   └───main # 主进程启动位置
 ├───configs # 外部配置
-│   ├───secret # 服务器配置
+│   ├───secret # 服务器配置 (gitignore)
 │   └───sql # 数据库配置
 ├───docs # 文档
 │   ├───prompt # 智能体辅助开发文档
@@ -25,7 +28,6 @@
     │   ├───logger # 日志管理
     │   └───server # 服务器、路由管理
     ├───controllers # 请求控制器实现
-    │   ├───accessCtrl # 场地权限请求控制器
     │   ├───applicationCtrl # 申请单请求控制器
     │   ├───fileCtrl # 文件请求控制器
     │   ├───notificationCtrl # 公告与站内信请求控制器
@@ -35,7 +37,6 @@
     ├───models # 业务模型
     ├───repository # 存储层实现
     ├───service # 业务层实现
-    │   ├───accessSvc # 场地权限业务
     │   ├───applicationSvc # 申请单业务
     │   ├───fileStorage # 文件仓储业务
     │   ├───fileSvc # 文件出入库业务
@@ -50,24 +51,9 @@
         └───webtoken # 用户令牌组件
 ```
 
-## 开发指南 / Development Guide
-
-### 环境要求 / Prerequisites
-- Go 1.24+
-- Docker (可选 / optional)
-
-### 构建项目 / Build Project
-参考 Dockerfile 中的构建命令注释。
-
-Refer to build command comments in Makefile.
-
-### 运行应用 / Run Application
-参考 Dockerfile 中的运行命令注释。
-
-Refer to run command comments in Makefile.
-
 ## 技术栈 / Tech Stack
 
-- **语言 / Language**: Go 1.24+
-- **数据库 / Database**: MySQL
-- **容器化 / Containerization**: Docker
+- **语言**: Go 1.25.1
+- **主要依赖**: Gin, Gorm
+- **数据库**: MySQL
+- **容器化**: Docker
