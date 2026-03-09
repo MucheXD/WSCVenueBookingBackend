@@ -178,7 +178,6 @@ func GetUnreadSystemNotificationsByUserID(tx *gorm.DB, userID string) ([]int, er
 	if err := tx.Model(&NotificationContentEntity{}).
 		Where("type = ?", 1).
 		Where("status = ?", 1).
-		Where("sender_uid != ?", userID).
 		Where("NOT EXISTS (SELECT 1 FROM notification_targets WHERE notification_targets.notification_id = notification_contents.id AND notification_targets.receiver_uid = ?)", userID).
 		Pluck("id", &notificationIDs).Error; err != nil {
 		return notificationIDs, err
